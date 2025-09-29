@@ -207,7 +207,7 @@
         }
 
         th, td {
-            padding: 15px 12px;
+            padding: 12px 10px;
             text-align: left;
             border-bottom: 1px solid var(--border);
         }
@@ -499,6 +499,44 @@
             background-color: var(--danger);
         }
 
+        .editable-cell {
+            padding: 8px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .editable-cell:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+            border-color: var(--primary);
+        }
+
+        .editable-cell:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: white;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .table-footer-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .horizontal-scroll-info {
+            text-align: center;
+            color: var(--gray);
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -516,6 +554,10 @@
             .pagination-container {
                 flex-direction: column;
                 text-align: center;
+            }
+            
+            .table-footer-buttons {
+                justify-content: center;
             }
         }
     </style>
@@ -538,20 +580,10 @@
                     <input type="text" id="searchInput" placeholder="Rechercher par DAO, Exercice, Société ou ICE...">
                 </div>
             </div>
-            <div class="action-buttons">
-                <button class="btn btn-primary" id="importBtn">
-                    <i class="fas fa-file-import"></i> Importer
-                </button>
-                <button class="btn btn-success" id="addRowBtn">
-                    <i class="fas fa-plus"></i> Ajouter une ligne
-                </button>
-                <button class="btn btn-light" id="exportExcelBtn">
-                    <i class="fas fa-file-excel"></i> Excel
-                </button>
-                <button class="btn btn-light" id="exportPdfBtn">
-                    <i class="fas fa-file-pdf"></i> PDF
-                </button>
-            </div>
+        </div>
+
+        <div class="horizontal-scroll-info">
+            <i class="fas fa-arrows-left-right"></i> Faites défiler horizontalement pour voir toutes les colonnes
         </div>
 
         <div class="table-container">
@@ -559,6 +591,7 @@
                 <thead>
                     <tr>
                         <th>DAO N°</th>
+                        <th>Exercice</th>
                         <th>OBJET</th>
                         <th>SOCIETE</th>
                         <th>ADRESSE</th>
@@ -570,7 +603,6 @@
                         <th>TEL</th>
                         <th>FAX</th>
                         <th>E-mail</th>
-                        <th>STATUT</th>
                         <th>ACTION</th>
                     </tr>
                 </thead>
@@ -578,6 +610,21 @@
                     <!-- Les données seront insérées ici dynamiquement -->
                 </tbody>
             </table>
+        </div>
+
+        <div class="table-footer-buttons">
+            <button class="btn btn-primary" id="importBtn">
+                <i class="fas fa-file-import"></i> Importer
+            </button>
+            <button class="btn btn-success" id="addRowBtn">
+                <i class="fas fa-plus"></i> Ajouter une ligne
+            </button>
+            <button class="btn btn-light" id="exportExcelBtn">
+                <i class="fas fa-file-excel"></i> Excel
+            </button>
+            <button class="btn btn-light" id="exportPdfBtn">
+                <i class="fas fa-file-pdf"></i> PDF
+            </button>
         </div>
 
         <div class="pagination-container">
@@ -596,86 +643,6 @@
                 </div>
                 <div class="pagination-buttons" id="paginationButtons">
                     <!-- Les boutons de pagination seront générés ici -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal pour ajouter/modifier une société -->
-        <div class="modal" id="companyModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="modalTitle">Ajouter une société</h2>
-                    <button class="close-btn" id="closeModal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="companyForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="daoNumber">DAO N°</label>
-                                <input type="text" id="daoNumber" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="exercise">Exercice</label>
-                                <input type="number" id="exercise" min="2000" max="2030" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="object">OBJET</label>
-                            <input type="text" id="object" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="company">SOCIETE</label>
-                            <input type="text" id="company" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="address">ADRESSE</label>
-                            <input type="text" id="address" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="rcNumber">N° RC</label>
-                                <input type="text" id="rcNumber" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="rcCity">Ville RC</label>
-                                <input type="text" id="rcCity" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ice">ICE</label>
-                                <input type="text" id="ice" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="ifNumber">IF</label>
-                                <input type="text" id="ifNumber" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="cnss">CNSS</label>
-                                <input type="text" id="cnss" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">TEL</label>
-                                <input type="text" id="phone" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fax">FAX</label>
-                                <input type="text" id="fax">
-                            </div>
-                            <div class="form-group">
-                                <label for="email">E-mail</label>
-                                <input type="email" id="email" required>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-light" id="cancelBtn">Annuler</button>
-                    <button class="btn btn-primary" id="saveBtn">Enregistrer</button>
                 </div>
             </div>
         </div>
@@ -715,6 +682,7 @@
         let pageSize = 10;
         let filteredData = [];
         let editingId = null;
+        let newRowId = 0;
 
         // Éléments DOM
         const tableBody = document.getElementById('tableBody');
@@ -722,12 +690,6 @@
         const pageSizeSelect = document.getElementById('pageSizeSelect');
         const paginationInfo = document.getElementById('paginationInfo');
         const paginationButtons = document.getElementById('paginationButtons');
-        const companyModal = document.getElementById('companyModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const companyForm = document.getElementById('companyForm');
-        const closeModal = document.getElementById('closeModal');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const saveBtn = document.getElementById('saveBtn');
         const addRowBtn = document.getElementById('addRowBtn');
         const importBtn = document.getElementById('importBtn');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
@@ -752,13 +714,10 @@
         function setupEventListeners() {
             searchInput.addEventListener('input', handleSearch);
             pageSizeSelect.addEventListener('change', handlePageSizeChange);
-            addRowBtn.addEventListener('click', openAddModal);
+            addRowBtn.addEventListener('click', addNewRow);
             importBtn.addEventListener('click', handleImport);
             exportExcelBtn.addEventListener('click', handleExportExcel);
             exportPdfBtn.addEventListener('click', handleExportPdf);
-            closeModal.addEventListener('click', closeCompanyModal);
-            cancelBtn.addEventListener('click', closeCompanyModal);
-            saveBtn.addEventListener('click', saveCompany);
         }
 
         // Chargement des données depuis Firebase
@@ -769,11 +728,11 @@
                 snapshot.forEach(doc => {
                     const company = doc.data();
                     company.id = doc.id;
+                    company.status = company.status || 'validated';
                     companiesData.push(company);
                 });
                 filteredData = [...companiesData];
                 renderTable();
-                showNotification('Données chargées avec succès', 'success');
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
                 showNotification('Erreur lors du chargement des données', 'error');
@@ -819,54 +778,218 @@
             const endIndex = startIndex + pageSize;
             const pageData = filteredData.slice(startIndex, endIndex);
             
-            if (pageData.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="14" style="text-align: center; padding: 30px;">
-                            Aucune donnée disponible
-                        </td>
-                    </tr>
-                `;
+            if (pageData.length === 0 && companiesData.length === 0) {
+                // Afficher une ligne vide pour la saisie si aucune donnée n'existe
+                addEmptyRow();
             } else {
                 pageData.forEach(company => {
                     const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${company.daoNumber}</td>
-                        <td>${company.object}</td>
-                        <td>${company.company}</td>
-                        <td>${company.address}</td>
-                        <td>${company.rcNumber}</td>
-                        <td>${company.rcCity}</td>
-                        <td>${company.ice}</td>
-                        <td>${company.ifNumber}</td>
-                        <td>${company.cnss}</td>
-                        <td>${company.phone}</td>
-                        <td>${company.fax}</td>
-                        <td>${company.email}</td>
-                        <td>
-                            <span class="status-badge ${company.status === 'validated' ? 'status-validated' : 'status-pending'}">
-                                ${company.status === 'validated' ? 'Validé' : 'En attente'}
-                            </span>
-                        </td>
-                        <td class="action-cell">
-                            ${company.status === 'pending' ? 
-                                `<button class="action-btn validate-btn" onclick="validateCompany('${company.id}')">
+                    if (company.status === 'pending') {
+                        // Ligne en attente de validation - édition directe
+                        row.innerHTML = `
+                            <td><input type="text" class="editable-cell" value="${company.daoNumber || ''}" data-field="daoNumber" data-id="${company.id}"></td>
+                            <td><input type="number" class="editable-cell" value="${company.exercise || ''}" data-field="exercise" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.object || ''}" data-field="object" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.company || ''}" data-field="company" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.address || ''}" data-field="address" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.rcNumber || ''}" data-field="rcNumber" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.rcCity || ''}" data-field="rcCity" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.ice || ''}" data-field="ice" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.ifNumber || ''}" data-field="ifNumber" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.cnss || ''}" data-field="cnss" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.phone || ''}" data-field="phone" data-id="${company.id}"></td>
+                            <td><input type="text" class="editable-cell" value="${company.fax || ''}" data-field="fax" data-id="${company.id}"></td>
+                            <td><input type="email" class="editable-cell" value="${company.email || ''}" data-field="email" data-id="${company.id}"></td>
+                            <td class="action-cell">
+                                <button class="action-btn validate-btn" onclick="validateCompany('${company.id}')">
                                     <i class="fas fa-check"></i> Valider
-                                </button>` : 
-                                `<button class="action-btn edit-btn" onclick="editCompany('${company.id}')">
+                                </button>
+                                <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </td>
+                        `;
+                    } else {
+                        // Ligne validée - affichage seulement avec option de modification
+                        row.innerHTML = `
+                            <td>${company.daoNumber}</td>
+                            <td>${company.exercise}</td>
+                            <td>${company.object}</td>
+                            <td>${company.company}</td>
+                            <td>${company.address}</td>
+                            <td>${company.rcNumber}</td>
+                            <td>${company.rcCity}</td>
+                            <td>${company.ice}</td>
+                            <td>${company.ifNumber}</td>
+                            <td>${company.cnss}</td>
+                            <td>${company.phone}</td>
+                            <td>${company.fax}</td>
+                            <td>${company.email}</td>
+                            <td class="action-cell">
+                                <button class="action-btn edit-btn" onclick="enableRowEditing('${company.id}')">
                                     <i class="fas fa-edit"></i> Modifier
-                                </button>`
-                            }
-                            <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
-                                <i class="fas fa-trash"></i> Supprimer
-                            </button>
-                        </td>
-                    `;
+                                </button>
+                                <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </td>
+                        `;
+                    }
                     tableBody.appendChild(row);
                 });
+                
+                // Ajouter des écouteurs d'événements pour les champs éditables
+                attachEditableListeners();
             }
             
             updatePagination();
+        }
+
+        // Ajouter une ligne vide pour la saisie
+        function addEmptyRow() {
+            newRowId--;
+            const tempId = `new-${newRowId}`;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="text" class="editable-cell" placeholder="DAO N°" data-field="daoNumber" data-id="${tempId}"></td>
+                <td><input type="number" class="editable-cell" placeholder="Exercice" data-field="exercise" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="OBJET" data-field="object" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="SOCIETE" data-field="company" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="ADRESSE" data-field="address" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="N° RC" data-field="rcNumber" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="Ville RC" data-field="rcCity" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="ICE" data-field="ice" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="IF" data-field="ifNumber" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="CNSS" data-field="cnss" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="TEL" data-field="phone" data-id="${tempId}"></td>
+                <td><input type="text" class="editable-cell" placeholder="FAX" data-field="fax" data-id="${tempId}"></td>
+                <td><input type="email" class="editable-cell" placeholder="E-mail" data-field="email" data-id="${tempId}"></td>
+                <td class="action-cell">
+                    <button class="action-btn validate-btn" onclick="saveNewRow('${tempId}')">
+                        <i class="fas fa-check"></i> Enregistrer
+                    </button>
+                    <button class="action-btn delete-btn" onclick="removeNewRow('${tempId}')">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+            attachEditableListeners();
+        }
+
+        // Ajouter une nouvelle ligne
+        function addNewRow() {
+            addEmptyRow();
+        }
+
+        // Attacher les écouteurs d'événements pour les champs éditables
+        function attachEditableListeners() {
+            const editableCells = document.querySelectorAll('.editable-cell');
+            editableCells.forEach(cell => {
+                cell.addEventListener('blur', handleCellEdit);
+                cell.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        this.blur();
+                    }
+                });
+            });
+        }
+
+        // Gérer l'édition d'une cellule
+        function handleCellEdit(event) {
+            const cell = event.target;
+            const field = cell.getAttribute('data-field');
+            const id = cell.getAttribute('data-id');
+            const value = cell.value;
+            
+            if (id && id.startsWith('new-')) {
+                // Nouvelle ligne - rien à sauvegarder tant que l'utilisateur n'a pas cliqué sur Enregistrer
+                return;
+            }
+            
+            // Mettre à jour la donnée en mémoire
+            const company = companiesData.find(c => c.id === id);
+            if (company && company.status === 'pending') {
+                company[field] = value;
+                
+                // Sauvegarder automatiquement dans Firebase
+                saveCompanyToFirebase(company, false).then(success => {
+                    if (success) {
+                        showNotification('Modification sauvegardée', 'success');
+                    } else {
+                        showNotification('Erreur lors de la sauvegarde', 'error');
+                    }
+                });
+            }
+        }
+
+        // Sauvegarder une nouvelle ligne
+        async function saveNewRow(tempId) {
+            const row = document.querySelector(`tr input[data-id="${tempId}"]`).closest('tr');
+            const inputs = row.querySelectorAll('input');
+            
+            // Vérifier que tous les champs obligatoires sont remplis
+            let isValid = true;
+            inputs.forEach(input => {
+                if (input.hasAttribute('required') && !input.value.trim()) {
+                    isValid = false;
+                    input.style.borderColor = 'var(--danger)';
+                } else {
+                    input.style.borderColor = '';
+                }
+            });
+            
+            if (!isValid) {
+                showNotification('Veuillez remplir tous les champs obligatoires', 'error');
+                return;
+            }
+            
+            // Créer l'objet société
+            const companyData = {
+                daoNumber: row.querySelector('input[data-field="daoNumber"]').value,
+                exercise: parseInt(row.querySelector('input[data-field="exercise"]').value),
+                object: row.querySelector('input[data-field="object"]').value,
+                company: row.querySelector('input[data-field="company"]').value,
+                address: row.querySelector('input[data-field="address"]').value,
+                rcNumber: row.querySelector('input[data-field="rcNumber"]').value,
+                rcCity: row.querySelector('input[data-field="rcCity"]').value,
+                ice: row.querySelector('input[data-field="ice"]').value,
+                ifNumber: row.querySelector('input[data-field="ifNumber"]').value,
+                cnss: row.querySelector('input[data-field="cnss"]').value,
+                phone: row.querySelector('input[data-field="phone"]').value,
+                fax: row.querySelector('input[data-field="fax"]').value,
+                email: row.querySelector('input[data-field="email"]').value,
+                status: 'pending'
+            };
+            
+            showLoading();
+            
+            // Sauvegarder dans Firebase
+            const success = await saveCompanyToFirebase(companyData, true);
+            if (success) {
+                await loadCompaniesFromFirebase();
+                showNotification('Société ajoutée avec succès', 'success');
+            } else {
+                showNotification('Erreur lors de l\'ajout de la société', 'error');
+            }
+            
+            hideLoading();
+        }
+
+        // Supprimer une nouvelle ligne non sauvegardée
+        function removeNewRow(tempId) {
+            const row = document.querySelector(`tr input[data-id="${tempId}"]`).closest('tr');
+            row.remove();
+        }
+
+        // Activer l'édition pour une ligne validée
+        function enableRowEditing(id) {
+            const company = companiesData.find(c => c.id === id);
+            if (company) {
+                company.status = 'pending';
+                renderTable();
+                showNotification('Vous pouvez maintenant modifier cette société', 'success');
+            }
         }
 
         // Mise à jour de la pagination
@@ -936,10 +1059,10 @@
                 filteredData = [...companiesData];
             } else {
                 filteredData = companiesData.filter(company => 
-                    company.daoNumber.toLowerCase().includes(searchTerm) ||
-                    company.exercise.toString().includes(searchTerm) ||
-                    company.company.toLowerCase().includes(searchTerm) ||
-                    company.ice.toLowerCase().includes(searchTerm)
+                    (company.daoNumber && company.daoNumber.toLowerCase().includes(searchTerm)) ||
+                    (company.exercise && company.exercise.toString().includes(searchTerm)) ||
+                    (company.company && company.company.toLowerCase().includes(searchTerm)) ||
+                    (company.ice && company.ice.toLowerCase().includes(searchTerm))
                 );
             }
             
@@ -952,93 +1075,6 @@
             pageSize = parseInt(pageSizeSelect.value);
             currentPage = 1;
             renderTable();
-        }
-
-        // Ouverture du modal d'ajout
-        function openAddModal() {
-            editingId = null;
-            modalTitle.textContent = 'Ajouter une société';
-            companyForm.reset();
-            companyModal.style.display = 'flex';
-        }
-
-        // Fermeture du modal
-        function closeCompanyModal() {
-            companyModal.style.display = 'none';
-        }
-
-        // Sauvegarde d'une société (ajout ou modification)
-        async function saveCompany() {
-            const daoNumber = document.getElementById('daoNumber').value;
-            const exercise = parseInt(document.getElementById('exercise').value);
-            
-            const companyData = {
-                daoNumber: daoNumber,
-                exercise: exercise,
-                object: document.getElementById('object').value,
-                company: document.getElementById('company').value,
-                address: document.getElementById('address').value,
-                rcNumber: document.getElementById('rcNumber').value,
-                rcCity: document.getElementById('rcCity').value,
-                ice: document.getElementById('ice').value,
-                ifNumber: document.getElementById('ifNumber').value,
-                cnss: document.getElementById('cnss').value,
-                phone: document.getElementById('phone').value,
-                fax: document.getElementById('fax').value,
-                email: document.getElementById('email').value,
-                status: 'pending'
-            };
-            
-            showLoading();
-            
-            if (editingId === null) {
-                // Ajout d'une nouvelle société
-                const success = await saveCompanyToFirebase(companyData, true);
-                if (success) {
-                    await loadCompaniesFromFirebase(); // Recharger les données depuis Firebase
-                    showNotification('Société ajoutée avec succès', 'success');
-                } else {
-                    showNotification('Erreur lors de l\'ajout de la société', 'error');
-                }
-            } else {
-                // Modification d'une société existante
-                companyData.id = editingId;
-                const success = await saveCompanyToFirebase(companyData, false);
-                if (success) {
-                    await loadCompaniesFromFirebase(); // Recharger les données depuis Firebase
-                    showNotification('Société modifiée avec succès', 'success');
-                } else {
-                    showNotification('Erreur lors de la modification de la société', 'error');
-                }
-            }
-            
-            hideLoading();
-            closeCompanyModal();
-        }
-
-        // Édition d'une société
-        function editCompany(id) {
-            const company = companiesData.find(c => c.id === id);
-            if (company) {
-                editingId = id;
-                modalTitle.textContent = 'Modifier la société';
-                
-                document.getElementById('daoNumber').value = company.daoNumber;
-                document.getElementById('exercise').value = company.exercise;
-                document.getElementById('object').value = company.object;
-                document.getElementById('company').value = company.company;
-                document.getElementById('address').value = company.address;
-                document.getElementById('rcNumber').value = company.rcNumber;
-                document.getElementById('rcCity').value = company.rcCity;
-                document.getElementById('ice').value = company.ice;
-                document.getElementById('ifNumber').value = company.ifNumber;
-                document.getElementById('cnss').value = company.cnss;
-                document.getElementById('phone').value = company.phone;
-                document.getElementById('fax').value = company.fax;
-                document.getElementById('email').value = company.email;
-                
-                companyModal.style.display = 'flex';
-            }
         }
 
         // Validation d'une société
@@ -1074,15 +1110,64 @@
         }
 
         // Importation de données
-        function handleImport() {
+        async function handleImport() {
             showLoading();
+            showNotification('Importation en cours...', 'success');
             
-            // Simuler un délai d'importation
-            setTimeout(() => {
-                // Dans une application réelle, on importerait des données depuis un fichier
-                // Pour l'instant, on simule l'importation
-                hideLoading();
-                showNotification('Fonction d\'importation en cours de développement', 'success');
+            // Simuler l'importation de données externes
+            setTimeout(async () => {
+                try {
+                    // Données d'exemple à importer
+                    const importedData = [
+                        {
+                            daoNumber: "AO-2023-003",
+                            exercise: 2023,
+                            object: "Services de nettoyage",
+                            company: "Propreté Services",
+                            address: "12 Rue Ibn Khaldoun, Fès",
+                            rcNumber: "11223",
+                            rcCity: "Fès",
+                            ice: "001234567890126",
+                            ifNumber: "44556677",
+                            cnss: "J112233445",
+                            phone: "0535-667788",
+                            fax: "0535-667789",
+                            email: "contact@propreteservices.ma",
+                            status: "pending"
+                        },
+                        {
+                            daoNumber: "AO-2022-020",
+                            exercise: 2022,
+                            object: "Maintenance équipements",
+                            company: "Maintenance Pro",
+                            address: "34 Avenue des FAR, Agadir",
+                            rcNumber: "99887",
+                            rcCity: "Agadir",
+                            ice: "001234567890127",
+                            ifNumber: "99887766",
+                            cnss: "J554433221",
+                            phone: "0528-334455",
+                            fax: "0528-334456",
+                            email: "info@maintenancepro.ma",
+                            status: "pending"
+                        }
+                    ];
+                    
+                    // Sauvegarder chaque société importée
+                    for (const company of importedData) {
+                        await saveCompanyToFirebase(company, true);
+                    }
+                    
+                    // Recharger les données
+                    await loadCompaniesFromFirebase();
+                    
+                    hideLoading();
+                    showNotification(`${importedData.length} sociétés importées avec succès`, 'success');
+                } catch (error) {
+                    console.error('Erreur lors de l\'importation:', error);
+                    hideLoading();
+                    showNotification('Erreur lors de l\'importation des données', 'error');
+                }
             }, 2000);
         }
 
@@ -1094,7 +1179,7 @@
             setTimeout(() => {
                 // Dans une application réelle, on utiliserait une bibliothèque comme SheetJS
                 hideLoading();
-                showNotification('Exportation Excel en cours de développement', 'success');
+                showNotification('Exportation Excel simulée!', 'success');
             }, 1000);
         }
 
@@ -1106,7 +1191,7 @@
             setTimeout(() => {
                 // Dans une application réelle, on utiliserait une bibliothèque comme jsPDF
                 hideLoading();
-                showNotification('Exportation PDF en cours de développement', 'success');
+                showNotification('Exportation PDF simulée!', 'success');
             }, 1000);
         }
 
