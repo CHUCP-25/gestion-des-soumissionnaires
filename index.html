@@ -10,7 +10,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     
+    <!-- Bibliothèques pour l'exportation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
     <style>
+        /* Votre CSS reste inchangé */
         :root {
             --primary: #3498db;
             --primary-dark: #2980b9;
@@ -842,9 +848,9 @@
             const row = document.querySelector(`tr input[data-id="${tempId}"]`).closest('tr');
             const inputs = row.querySelectorAll('input');
             
-            // Vérifier que tous les champs obligatoires sont remplis
+            // CORRECTION: Seulement les champs DAO N°, Exercice, OBJET, SOCIETE, ADRESSE, N° RC, Ville RC et E-mail sont obligatoires
             let isValid = true;
-            const requiredFields = ['daoNumber', 'exercise', 'object', 'company', 'address', 'rcNumber', 'rcCity', 'ice', 'ifNumber', 'cnss', 'phone', 'email'];
+            const requiredFields = ['daoNumber', 'exercise', 'object', 'company', 'address', 'rcNumber', 'rcCity', 'email'];
             
             inputs.forEach(input => {
                 const field = input.getAttribute('data-field');
@@ -857,7 +863,7 @@
             });
             
             if (!isValid) {
-                showNotification('Veuillez remplir tous les champs obligatoires', 'error');
+                showNotification('Veuillez remplir tous les champs obligatoires (DAO N°, Exercice, OBJET, SOCIETE, ADRESSE, N° RC, Ville RC, E-mail)', 'error');
                 return;
             }
             
@@ -870,11 +876,11 @@
                 address: row.querySelector('input[data-field="address"]').value,
                 rcNumber: row.querySelector('input[data-field="rcNumber"]').value,
                 rcCity: row.querySelector('input[data-field="rcCity"]').value,
-                ice: row.querySelector('input[data-field="ice"]').value,
-                ifNumber: row.querySelector('input[data-field="ifNumber"]').value,
-                cnss: row.querySelector('input[data-field="cnss"]').value,
-                phone: row.querySelector('input[data-field="phone"]').value,
-                fax: row.querySelector('input[data-field="fax"]').value,
+                ice: row.querySelector('input[data-field="ice"]').value || '',
+                ifNumber: row.querySelector('input[data-field="ifNumber"]').value || '',
+                cnss: row.querySelector('input[data-field="cnss"]').value || '',
+                phone: row.querySelector('input[data-field="phone"]').value || '',
+                fax: row.querySelector('input[data-field="fax"]').value || '',
                 email: row.querySelector('input[data-field="email"]').value,
                 status: 'pending'
             };
@@ -1028,89 +1034,194 @@
             }
         }
 
-        // Importation de données
+        // Importation de données - CORRIGÉE
         async function handleImport() {
             showLoading();
             
-            // Simuler l'importation de données externes
-            setTimeout(async () => {
-                try {
-                    // Données d'exemple à importer
-                    const importedData = [
-                        {
-                            daoNumber: "AO-2023-003",
-                            exercise: 2023,
-                            object: "Services de nettoyage",
-                            company: "Propreté Services",
-                            address: "12 Rue Ibn Khaldoun, Fès",
-                            rcNumber: "11223",
-                            rcCity: "Fès",
-                            ice: "001234567890126",
-                            ifNumber: "44556677",
-                            cnss: "J112233445",
-                            phone: "0535-667788",
-                            fax: "0535-667789",
-                            email: "contact@propreteservices.ma",
-                            status: "pending"
-                        },
-                        {
-                            daoNumber: "AO-2022-020",
-                            exercise: 2022,
-                            object: "Maintenance équipements",
-                            company: "Maintenance Pro",
-                            address: "34 Avenue des FAR, Agadir",
-                            rcNumber: "99887",
-                            rcCity: "Agadir",
-                            ice: "001234567890127",
-                            ifNumber: "99887766",
-                            cnss: "J554433221",
-                            phone: "0528-334455",
-                            fax: "0528-334456",
-                            email: "info@maintenancepro.ma",
-                            status: "pending"
-                        }
-                    ];
-                    
-                    // Sauvegarder chaque société importée
-                    for (const company of importedData) {
-                        await saveCompanyToFirebase(company, true);
+            try {
+                // Données d'exemple à importer
+                const importedData = [
+                    {
+                        daoNumber: "AO-2023-003",
+                        exercise: 2023,
+                        object: "Services de nettoyage",
+                        company: "Propreté Services",
+                        address: "12 Rue Ibn Khaldoun, Fès",
+                        rcNumber: "11223",
+                        rcCity: "Fès",
+                        ice: "001234567890126",
+                        ifNumber: "44556677",
+                        cnss: "J112233445",
+                        phone: "0535-667788",
+                        fax: "0535-667789",
+                        email: "contact@propreteservices.ma",
+                        status: "pending"
+                    },
+                    {
+                        daoNumber: "AO-2022-020",
+                        exercise: 2022,
+                        object: "Maintenance équipements",
+                        company: "Maintenance Pro",
+                        address: "34 Avenue des FAR, Agadir",
+                        rcNumber: "99887",
+                        rcCity: "Agadir",
+                        ice: "001234567890127",
+                        ifNumber: "99887766",
+                        cnss: "J554433221",
+                        phone: "0528-334455",
+                        fax: "0528-334456",
+                        email: "info@maintenancepro.ma",
+                        status: "pending"
                     }
-                    
-                    // Recharger les données
-                    await loadCompaniesFromFirebase();
-                    
-                    hideLoading();
-                    showNotification(`${importedData.length} sociétés importées avec succès et triées par exercice/DAO`, 'success');
-                } catch (error) {
-                    console.error('Erreur lors de l\'importation:', error);
-                    hideLoading();
-                    showNotification('Erreur lors de l\'importation des données', 'error');
+                ];
+                
+                // Sauvegarder chaque société importée
+                let importedCount = 0;
+                for (const company of importedData) {
+                    const success = await saveCompanyToFirebase(company, true);
+                    if (success) {
+                        importedCount++;
+                    }
                 }
-            }, 2000);
+                
+                // Recharger les données
+                await loadCompaniesFromFirebase();
+                
+                hideLoading();
+                showNotification(`${importedCount} sociétés importées avec succès et triées par exercice/DAO`, 'success');
+            } catch (error) {
+                console.error('Erreur lors de l\'importation:', error);
+                hideLoading();
+                showNotification('Erreur lors de l\'importation des données', 'error');
+            }
         }
 
-        // Exportation vers Excel
+        // Exportation vers Excel - CORRIGÉE (télécharge un vrai fichier Excel)
         function handleExportExcel() {
             showLoading();
             
-            // Simuler un délai d'exportation
-            setTimeout(() => {
-                // Dans une application réelle, on utiliserait une bibliothèque comme SheetJS
+            try {
+                // Préparer les données pour l'exportation
+                const exportData = companiesData.map(company => ({
+                    'DAO N°': company.daoNumber,
+                    'Exercice': company.exercise,
+                    'OBJET': company.object,
+                    'SOCIETE': company.company,
+                    'ADRESSE': company.address,
+                    'N° RC': company.rcNumber,
+                    'Ville RC': company.rcCity,
+                    'ICE': company.ice || '',
+                    'IF': company.ifNumber || '',
+                    'CNSS': company.cnss || '',
+                    'TEL': company.phone || '',
+                    'FAX': company.fax || '',
+                    'E-mail': company.email,
+                    'STATUT': company.status === 'validated' ? 'Validé' : 'En attente'
+                }));
+                
+                // Créer un classeur Excel
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Sociétés");
+                
+                // Générer le fichier Excel
+                const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                
+                // Télécharger le fichier
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `societes_participantes_${new Date().toISOString().split('T')[0]}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
                 hideLoading();
-                showNotification('Exportation Excel simulée!', 'success');
-            }, 1000);
+                showNotification('Exportation Excel réussie!', 'success');
+            } catch (error) {
+                console.error('Erreur lors de l\'exportation Excel:', error);
+                hideLoading();
+                showNotification('Erreur lors de l\'exportation Excel', 'error');
+            }
         }
 
-        // Exportation vers PDF
+        // Exportation vers PDF - CORRIGÉE (télécharge un vrai fichier PDF)
         function handleExportPdf() {
             showLoading();
             
-            // Simuler un délai d'exportation
-            setTimeout(() => {
-                // Dans une application réelle, on utiliserait une bibliothèque comme jsPDF
+            try {
+                // Utiliser jsPDF avec autoTable
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Titre du document
+                doc.setFontSize(16);
+                doc.text('Liste des Sociétés Participantes', 14, 15);
+                doc.setFontSize(10);
+                doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 22);
+                
+                // Préparer les données pour le tableau
+                const tableData = companiesData.map(company => [
+                    company.daoNumber,
+                    company.exercise,
+                    company.object,
+                    company.company,
+                    company.address,
+                    company.rcNumber,
+                    company.rcCity,
+                    company.ice || '',
+                    company.ifNumber || '',
+                    company.cnss || '',
+                    company.phone || '',
+                    company.fax || '',
+                    company.email,
+                    company.status === 'validated' ? 'Validé' : 'En attente'
+                ]);
+                
+                // En-têtes du tableau
+                const headers = [
+                    'DAO N°', 'Exercice', 'OBJET', 'SOCIETE', 'ADRESSE', 
+                    'N° RC', 'Ville RC', 'ICE', 'IF', 'CNSS', 
+                    'TEL', 'FAX', 'E-mail', 'STATUT'
+                ];
+                
+                // Créer le tableau
+                doc.autoTable({
+                    head: [headers],
+                    body: tableData,
+                    startY: 25,
+                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [52, 152, 219] },
+                    columnStyles: {
+                        0: { cellWidth: 20 },
+                        1: { cellWidth: 15 },
+                        2: { cellWidth: 30 },
+                        3: { cellWidth: 25 },
+                        4: { cellWidth: 30 },
+                        5: { cellWidth: 15 },
+                        6: { cellWidth: 15 },
+                        7: { cellWidth: 20 },
+                        8: { cellWidth: 15 },
+                        9: { cellWidth: 15 },
+                        10: { cellWidth: 15 },
+                        11: { cellWidth: 15 },
+                        12: { cellWidth: 25 },
+                        13: { cellWidth: 15 }
+                    }
+                });
+                
+                // Télécharger le PDF
+                doc.save(`societes_participantes_${new Date().toISOString().split('T')[0]}.pdf`);
+                
                 hideLoading();
-                showNotification('Exportation PDF simulée!', 'success');
-            }, 1000);
+                showNotification('Exportation PDF réussie!', 'success');
+            } catch (error) {
+                console.error('Erreur lors de l\'exportation PDF:', error);
+                hideLoading();
+                showNotification('Erreur lors de l\'exportation PDF', 'error');
+            }
         }
 
         // Affichage du loader
