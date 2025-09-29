@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Sociétés - Appels d'Offres</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Intégration de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    
     <style>
         :root {
             --primary: #3498db;
@@ -468,6 +473,32 @@
             font-size: 14px;
         }
 
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 500;
+            z-index: 3000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateX(150%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: var(--secondary);
+        }
+
+        .notification.error {
+            background-color: var(--danger);
+        }
+
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -660,66 +691,29 @@
         <p>Application de Gestion des Sociétés Participantes aux Appels d'Offres &copy; 2023</p>
     </footer>
 
+    <!-- Zone de notification -->
+    <div id="notificationArea"></div>
+
     <script>
-        // Données d'exemple
-        let companiesData = [
-            {
-                id: 1,
-                daoNumber: "AO-2023-001",
-                exercise: 2023,
-                object: "Fourniture de matériel informatique",
-                company: "Tech Solutions SARL",
-                address: "123 Avenue Hassan II, Casablanca",
-                rcNumber: "12345",
-                rcCity: "Casablanca",
-                ice: "001234567890123",
-                ifNumber: "12345678",
-                cnss: "J123456789",
-                phone: "0522-123456",
-                fax: "0522-123457",
-                email: "contact@techsolutions.ma",
-                status: "validated"
-            },
-            {
-                id: 2,
-                daoNumber: "AO-2023-002",
-                exercise: 2023,
-                object: "Services de consulting",
-                company: "Consult Plus",
-                address: "45 Rue Mohammed V, Rabat",
-                rcNumber: "67890",
-                rcCity: "Rabat",
-                ice: "001234567890124",
-                ifNumber: "87654321",
-                cnss: "J987654321",
-                phone: "0537-987654",
-                fax: "0537-987655",
-                email: "info@consultplus.ma",
-                status: "pending"
-            },
-            {
-                id: 3,
-                daoNumber: "AO-2022-015",
-                exercise: 2022,
-                object: "Construction bâtiment administratif",
-                company: "Bâtiments Moderne SA",
-                address: "78 Boulevard Al Massira, Marrakech",
-                rcNumber: "54321",
-                rcCity: "Marrakech",
-                ice: "001234567890125",
-                ifNumber: "13579246",
-                cnss: "J456789123",
-                phone: "0524-456789",
-                fax: "0524-456788",
-                email: "contact@batimentsmoderne.ma",
-                status: "validated"
-            }
-        ];
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPwCBtQZF0OiSOsS6vyoFImfrof-3M6j8",
+            authDomain: "gestion-des-soumissionnaires.firebaseapp.com",
+            projectId: "gestion-des-soumissionnaires",
+            storageBucket: "gestion-des-soumissionnaires.firebasestorage.app",
+            messagingSenderId: "844188912763",
+            appId: "1:844188912763:web:c25ccd643dbbf0cba666de"
+        };
+
+        // Initialisation Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         // Variables globales
+        let companiesData = [];
         let currentPage = 1;
         let pageSize = 10;
-        let filteredData = [...companiesData];
+        let filteredData = [];
         let editingId = null;
 
         // Éléments DOM
@@ -739,12 +733,20 @@
         const exportExcelBtn = document.getElementById('exportExcelBtn');
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
+        const notificationArea = document.getElementById('notificationArea');
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            renderTable();
-            setupEventListeners();
+            initializeApp();
         });
+
+        // Initialisation de l'application
+        async function initializeApp() {
+            showLoading();
+            await loadCompaniesFromFirebase();
+            setupEventListeners();
+            hideLoading();
+        }
 
         // Configuration des écouteurs d'événements
         function setupEventListeners() {
@@ -757,6 +759,56 @@
             closeModal.addEventListener('click', closeCompanyModal);
             cancelBtn.addEventListener('click', closeCompanyModal);
             saveBtn.addEventListener('click', saveCompany);
+        }
+
+        // Chargement des données depuis Firebase
+        async function loadCompaniesFromFirebase() {
+            try {
+                const snapshot = await db.collection('companies').orderBy('exercise', 'desc').orderBy('daoNumber').get();
+                companiesData = [];
+                snapshot.forEach(doc => {
+                    const company = doc.data();
+                    company.id = doc.id;
+                    companiesData.push(company);
+                });
+                filteredData = [...companiesData];
+                renderTable();
+                showNotification('Données chargées avec succès', 'success');
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+                showNotification('Erreur lors du chargement des données', 'error');
+            }
+        }
+
+        // Sauvegarde d'une société dans Firebase
+        async function saveCompanyToFirebase(company, isNew = true) {
+            try {
+                if (isNew) {
+                    // Ajouter un nouveau document
+                    const docRef = await db.collection('companies').add(company);
+                    company.id = docRef.id;
+                    // Mettre à jour le document avec l'ID
+                    await db.collection('companies').doc(docRef.id).update({ id: docRef.id });
+                } else {
+                    // Mettre à jour un document existant
+                    await db.collection('companies').doc(company.id).update(company);
+                }
+                return true;
+            } catch (error) {
+                console.error('Erreur lors de la sauvegarde:', error);
+                return false;
+            }
+        }
+
+        // Suppression d'une société de Firebase
+        async function deleteCompanyFromFirebase(id) {
+            try {
+                await db.collection('companies').doc(id).delete();
+                return true;
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                return false;
+            }
         }
 
         // Rendu du tableau
@@ -798,14 +850,14 @@
                         </td>
                         <td class="action-cell">
                             ${company.status === 'pending' ? 
-                                `<button class="action-btn validate-btn" onclick="validateCompany(${company.id})">
+                                `<button class="action-btn validate-btn" onclick="validateCompany('${company.id}')">
                                     <i class="fas fa-check"></i> Valider
                                 </button>` : 
-                                `<button class="action-btn edit-btn" onclick="editCompany(${company.id})">
+                                `<button class="action-btn edit-btn" onclick="editCompany('${company.id}')">
                                     <i class="fas fa-edit"></i> Modifier
                                 </button>`
                             }
-                            <button class="action-btn delete-btn" onclick="deleteCompany(${company.id})">
+                            <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
                                 <i class="fas fa-trash"></i> Supprimer
                             </button>
                         </td>
@@ -916,65 +968,51 @@
         }
 
         // Sauvegarde d'une société (ajout ou modification)
-        function saveCompany() {
-            const formData = new FormData(companyForm);
+        async function saveCompany() {
             const daoNumber = document.getElementById('daoNumber').value;
             const exercise = parseInt(document.getElementById('exercise').value);
             
+            const companyData = {
+                daoNumber: daoNumber,
+                exercise: exercise,
+                object: document.getElementById('object').value,
+                company: document.getElementById('company').value,
+                address: document.getElementById('address').value,
+                rcNumber: document.getElementById('rcNumber').value,
+                rcCity: document.getElementById('rcCity').value,
+                ice: document.getElementById('ice').value,
+                ifNumber: document.getElementById('ifNumber').value,
+                cnss: document.getElementById('cnss').value,
+                phone: document.getElementById('phone').value,
+                fax: document.getElementById('fax').value,
+                email: document.getElementById('email').value,
+                status: 'pending'
+            };
+            
+            showLoading();
+            
             if (editingId === null) {
                 // Ajout d'une nouvelle société
-                const newCompany = {
-                    id: companiesData.length > 0 ? Math.max(...companiesData.map(c => c.id)) + 1 : 1,
-                    daoNumber: daoNumber,
-                    exercise: exercise,
-                    object: document.getElementById('object').value,
-                    company: document.getElementById('company').value,
-                    address: document.getElementById('address').value,
-                    rcNumber: document.getElementById('rcNumber').value,
-                    rcCity: document.getElementById('rcCity').value,
-                    ice: document.getElementById('ice').value,
-                    ifNumber: document.getElementById('ifNumber').value,
-                    cnss: document.getElementById('cnss').value,
-                    phone: document.getElementById('phone').value,
-                    fax: document.getElementById('fax').value,
-                    email: document.getElementById('email').value,
-                    status: 'pending'
-                };
-                
-                companiesData.push(newCompany);
+                const success = await saveCompanyToFirebase(companyData, true);
+                if (success) {
+                    await loadCompaniesFromFirebase(); // Recharger les données depuis Firebase
+                    showNotification('Société ajoutée avec succès', 'success');
+                } else {
+                    showNotification('Erreur lors de l\'ajout de la société', 'error');
+                }
             } else {
                 // Modification d'une société existante
-                const index = companiesData.findIndex(c => c.id === editingId);
-                if (index !== -1) {
-                    companiesData[index] = {
-                        ...companiesData[index],
-                        daoNumber: daoNumber,
-                        exercise: exercise,
-                        object: document.getElementById('object').value,
-                        company: document.getElementById('company').value,
-                        address: document.getElementById('address').value,
-                        rcNumber: document.getElementById('rcNumber').value,
-                        rcCity: document.getElementById('rcCity').value,
-                        ice: document.getElementById('ice').value,
-                        ifNumber: document.getElementById('ifNumber').value,
-                        cnss: document.getElementById('cnss').value,
-                        phone: document.getElementById('phone').value,
-                        fax: document.getElementById('fax').value,
-                        email: document.getElementById('email').value
-                    };
+                companyData.id = editingId;
+                const success = await saveCompanyToFirebase(companyData, false);
+                if (success) {
+                    await loadCompaniesFromFirebase(); // Recharger les données depuis Firebase
+                    showNotification('Société modifiée avec succès', 'success');
+                } else {
+                    showNotification('Erreur lors de la modification de la société', 'error');
                 }
             }
             
-            // Trier les données par exercice (décroissant) et par DAO (croissant)
-            companiesData.sort((a, b) => {
-                if (a.exercise !== b.exercise) {
-                    return b.exercise - a.exercise;
-                }
-                return a.daoNumber.localeCompare(b.daoNumber);
-            });
-            
-            filteredData = [...companiesData];
-            renderTable();
+            hideLoading();
             closeCompanyModal();
         }
 
@@ -1004,27 +1042,34 @@
         }
 
         // Validation d'une société
-        function validateCompany(id) {
-            const index = companiesData.findIndex(c => c.id === id);
-            if (index !== -1) {
-                companiesData[index].status = 'validated';
-                filteredData = [...companiesData];
-                renderTable();
-                
-                // Afficher une notification de succès
-                alert('Société validée avec succès!');
+        async function validateCompany(id) {
+            const company = companiesData.find(c => c.id === id);
+            if (company) {
+                showLoading();
+                company.status = 'validated';
+                const success = await saveCompanyToFirebase(company, false);
+                if (success) {
+                    await loadCompaniesFromFirebase();
+                    showNotification('Société validée avec succès', 'success');
+                } else {
+                    showNotification('Erreur lors de la validation', 'error');
+                }
+                hideLoading();
             }
         }
 
         // Suppression d'une société
-        function deleteCompany(id) {
+        async function deleteCompany(id) {
             if (confirm('Êtes-vous sûr de vouloir supprimer cette société ?')) {
-                companiesData = companiesData.filter(c => c.id !== id);
-                filteredData = [...companiesData];
-                renderTable();
-                
-                // Afficher une notification de succès
-                alert('Société supprimée avec succès!');
+                showLoading();
+                const success = await deleteCompanyFromFirebase(id);
+                if (success) {
+                    await loadCompaniesFromFirebase();
+                    showNotification('Société supprimée avec succès', 'success');
+                } else {
+                    showNotification('Erreur lors de la suppression', 'error');
+                }
+                hideLoading();
             }
         }
 
@@ -1034,61 +1079,10 @@
             
             // Simuler un délai d'importation
             setTimeout(() => {
-                // Données d'exemple à importer
-                const importedData = [
-                    {
-                        id: companiesData.length > 0 ? Math.max(...companiesData.map(c => c.id)) + 1 : 1,
-                        daoNumber: "AO-2023-003",
-                        exercise: 2023,
-                        object: "Services de nettoyage",
-                        company: "Propreté Services",
-                        address: "12 Rue Ibn Khaldoun, Fès",
-                        rcNumber: "11223",
-                        rcCity: "Fès",
-                        ice: "001234567890126",
-                        ifNumber: "44556677",
-                        cnss: "J112233445",
-                        phone: "0535-667788",
-                        fax: "0535-667789",
-                        email: "contact@propreteservices.ma",
-                        status: "pending"
-                    },
-                    {
-                        id: companiesData.length > 0 ? Math.max(...companiesData.map(c => c.id)) + 2 : 2,
-                        daoNumber: "AO-2022-020",
-                        exercise: 2022,
-                        object: "Maintenance équipements",
-                        company: "Maintenance Pro",
-                        address: "34 Avenue des FAR, Agadir",
-                        rcNumber: "99887",
-                        rcCity: "Agadir",
-                        ice: "001234567890127",
-                        ifNumber: "99887766",
-                        cnss: "J554433221",
-                        phone: "0528-334455",
-                        fax: "0528-334456",
-                        email: "info@maintenancepro.ma",
-                        status: "pending"
-                    }
-                ];
-                
-                // Ajouter les données importées aux données existantes
-                companiesData = [...companiesData, ...importedData];
-                
-                // Trier les données par exercice (décroissant) et par DAO (croissant)
-                companiesData.sort((a, b) => {
-                    if (a.exercise !== b.exercise) {
-                        return b.exercise - a.exercise;
-                    }
-                    return a.daoNumber.localeCompare(b.daoNumber);
-                });
-                
-                filteredData = [...companiesData];
-                renderTable();
+                // Dans une application réelle, on importerait des données depuis un fichier
+                // Pour l'instant, on simule l'importation
                 hideLoading();
-                
-                // Afficher une notification de succès
-                alert(`${importedData.length} sociétés importées avec succès!`);
+                showNotification('Fonction d\'importation en cours de développement', 'success');
             }, 2000);
         }
 
@@ -1099,8 +1093,8 @@
             // Simuler un délai d'exportation
             setTimeout(() => {
                 // Dans une application réelle, on utiliserait une bibliothèque comme SheetJS
-                alert('Exportation Excel simulée! Dans une application réelle, les données seraient exportées vers un fichier Excel.');
                 hideLoading();
+                showNotification('Exportation Excel en cours de développement', 'success');
             }, 1000);
         }
 
@@ -1111,8 +1105,8 @@
             // Simuler un délai d'exportation
             setTimeout(() => {
                 // Dans une application réelle, on utiliserait une bibliothèque comme jsPDF
-                alert('Exportation PDF simulée! Dans une application réelle, les données seraient exportées vers un fichier PDF.');
                 hideLoading();
+                showNotification('Exportation PDF en cours de développement', 'success');
             }, 1000);
         }
 
@@ -1124,6 +1118,27 @@
         // Masquage du loader
         function hideLoading() {
             loadingOverlay.style.display = 'none';
+        }
+
+        // Affichage des notifications
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notificationArea.appendChild(notification);
+            
+            // Afficher la notification
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Masquer et supprimer la notification après 3 secondes
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notificationArea.removeChild(notification);
+                }, 300);
+            }, 3000);
         }
     </script>
 </body>
