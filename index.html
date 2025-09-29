@@ -321,98 +321,6 @@
             border-color: var(--primary);
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: white;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 600px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            animation: modalFadeIn 0.3s;
-        }
-
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(-50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h2 {
-            font-size: 22px;
-            font-weight: 600;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: var(--gray);
-        }
-
-        .modal-body {
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-size: 16px;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .form-row {
-            display: flex;
-            gap: 15px;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-        }
-
-        .modal-footer {
-            padding: 15px 20px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
         .loading-overlay {
             display: none;
             position: fixed;
@@ -504,6 +412,8 @@
             border: 1px solid transparent;
             border-radius: 4px;
             transition: all 0.2s;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .editable-cell:hover {
@@ -535,6 +445,10 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+        }
+
+        .empty-row {
+            background-color: rgba(52, 152, 219, 0.05);
         }
 
         @media (max-width: 768px) {
@@ -681,7 +595,6 @@
         let currentPage = 1;
         let pageSize = 10;
         let filteredData = [];
-        let editingId = null;
         let newRowId = 0;
 
         // Éléments DOM
@@ -850,6 +763,7 @@
             newRowId--;
             const tempId = `new-${newRowId}`;
             const row = document.createElement('tr');
+            row.className = 'empty-row';
             row.innerHTML = `
                 <td><input type="text" class="editable-cell" placeholder="DAO N°" data-field="daoNumber" data-id="${tempId}"></td>
                 <td><input type="number" class="editable-cell" placeholder="Exercice" data-field="exercise" data-id="${tempId}"></td>
@@ -930,8 +844,11 @@
             
             // Vérifier que tous les champs obligatoires sont remplis
             let isValid = true;
+            const requiredFields = ['daoNumber', 'exercise', 'object', 'company', 'address', 'rcNumber', 'rcCity', 'ice', 'ifNumber', 'cnss', 'phone', 'email'];
+            
             inputs.forEach(input => {
-                if (input.hasAttribute('required') && !input.value.trim()) {
+                const field = input.getAttribute('data-field');
+                if (requiredFields.includes(field) && !input.value.trim()) {
                     isValid = false;
                     input.style.borderColor = 'var(--danger)';
                 } else {
@@ -979,7 +896,9 @@
         // Supprimer une nouvelle ligne non sauvegardée
         function removeNewRow(tempId) {
             const row = document.querySelector(`tr input[data-id="${tempId}"]`).closest('tr');
-            row.remove();
+            if (row) {
+                row.remove();
+            }
         }
 
         // Activer l'édition pour une ligne validée
@@ -1112,7 +1031,6 @@
         // Importation de données
         async function handleImport() {
             showLoading();
-            showNotification('Importation en cours...', 'success');
             
             // Simuler l'importation de données externes
             setTimeout(async () => {
@@ -1162,7 +1080,7 @@
                     await loadCompaniesFromFirebase();
                     
                     hideLoading();
-                    showNotification(`${importedData.length} sociétés importées avec succès`, 'success');
+                    showNotification(`${importedData.length} sociétés importées avec succès et triées par exercice/DAO`, 'success');
                 } catch (error) {
                     console.error('Erreur lors de l\'importation:', error);
                     hideLoading();
@@ -1221,7 +1139,9 @@
             setTimeout(() => {
                 notification.classList.remove('show');
                 setTimeout(() => {
-                    notificationArea.removeChild(notification);
+                    if (notification.parentNode) {
+                        notificationArea.removeChild(notification);
+                    }
                 }, 300);
             }, 3000);
         }
