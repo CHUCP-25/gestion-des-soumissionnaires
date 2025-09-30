@@ -16,7 +16,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* Votre CSS reste inchangé */
         :root {
             --primary: #3498db;
             --primary-dark: #2980b9;
@@ -26,6 +25,8 @@
             --danger-dark: #c0392b;
             --warning: #f39c12;
             --warning-dark: #d35400;
+            --orange: #ff9800;
+            --orange-dark: #f57c00;
             --light: #f8f9fa;
             --dark: #343a40;
             --gray: #6c757d;
@@ -180,6 +181,17 @@
             background-color: var(--warning-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-orange {
+            background-color: var(--orange);
+            color: white;
+        }
+
+        .btn-orange:hover {
+            background-color: var(--orange-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
         }
 
         .btn-light {
@@ -457,6 +469,11 @@
             background-color: rgba(52, 152, 219, 0.05);
         }
 
+        /* Style pour l'input file caché */
+        .file-input {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -533,8 +550,9 @@
         </div>
 
         <div class="table-footer-buttons">
-            <button class="btn btn-primary" id="importBtn">
-                <i class="fas fa-file-import"></i> Importer
+            <input type="file" id="excelFileInput" class="file-input" accept=".xlsx, .xls">
+            <button class="btn btn-orange" id="importDataBtn">
+                <i class="fas fa-file-import"></i> IMPORTER DES DONNEES
             </button>
             <button class="btn btn-success" id="addRowBtn">
                 <i class="fas fa-plus"></i> Ajouter une ligne
@@ -610,7 +628,8 @@
         const paginationInfo = document.getElementById('paginationInfo');
         const paginationButtons = document.getElementById('paginationButtons');
         const addRowBtn = document.getElementById('addRowBtn');
-        const importBtn = document.getElementById('importBtn');
+        const importDataBtn = document.getElementById('importDataBtn');
+        const excelFileInput = document.getElementById('excelFileInput');
         const exportExcelBtn = document.getElementById('exportExcelBtn');
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -634,7 +653,8 @@
             searchInput.addEventListener('input', handleSearch);
             pageSizeSelect.addEventListener('change', handlePageSizeChange);
             addRowBtn.addEventListener('click', addNewRow);
-            importBtn.addEventListener('click', handleImport);
+            importDataBtn.addEventListener('click', () => excelFileInput.click());
+            excelFileInput.addEventListener('change', handleExcelImport);
             exportExcelBtn.addEventListener('click', handleExportExcel);
             exportPdfBtn.addEventListener('click', handleExportPdf);
         }
@@ -848,7 +868,6 @@
             const row = document.querySelector(`tr input[data-id="${tempId}"]`).closest('tr');
             const inputs = row.querySelectorAll('input');
             
-            // CORRECTION: Seulement les champs DAO N°, Exercice, OBJET, SOCIETE, ADRESSE, N° RC, Ville RC et E-mail sont obligatoires
             let isValid = true;
             const requiredFields = ['daoNumber', 'exercise', 'object', 'company', 'address', 'rcNumber', 'rcCity', 'email'];
             
@@ -1034,69 +1053,203 @@
             }
         }
 
-        // Importation de données - CORRIGÉE
-        async function handleImport() {
-            showLoading();
+        // IMPORTATION DEPUIS UN FICHIER EXCEL - FONCTION COMPLÈTEMENT FONCTIONNELLE
+        async function handleExcelImport(event) {
+            const file = event.target.files[0];
             
+            if (!file) {
+                return;
+            }
+
+            // Vérifier l'extension du fichier
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showNotification('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)', 'error');
+                // Réinitialiser l'input file
+                event.target.value = '';
+                return;
+            }
+
+            if (!confirm('Voulez-vous importer les données depuis ce fichier Excel ?')) {
+                // Réinitialiser l'input file
+                event.target.value = '';
+                return;
+            }
+
+            showLoading();
+
             try {
-                // Données d'exemple à importer
-                const importedData = [
-                    {
-                        daoNumber: "AO-2023-003",
-                        exercise: 2023,
-                        object: "Services de nettoyage",
-                        company: "Propreté Services",
-                        address: "12 Rue Ibn Khaldoun, Fès",
-                        rcNumber: "11223",
-                        rcCity: "Fès",
-                        ice: "001234567890126",
-                        ifNumber: "44556677",
-                        cnss: "J112233445",
-                        phone: "0535-667788",
-                        fax: "0535-667789",
-                        email: "contact@propreteservices.ma",
-                        status: "pending"
-                    },
-                    {
-                        daoNumber: "AO-2022-020",
-                        exercise: 2022,
-                        object: "Maintenance équipements",
-                        company: "Maintenance Pro",
-                        address: "34 Avenue des FAR, Agadir",
-                        rcNumber: "99887",
-                        rcCity: "Agadir",
-                        ice: "001234567890127",
-                        ifNumber: "99887766",
-                        cnss: "J554433221",
-                        phone: "0528-334455",
-                        fax: "0528-334456",
-                        email: "info@maintenancepro.ma",
-                        status: "pending"
-                    }
-                ];
+                const data = await readExcelFile(file);
+                const importedData = processExcelData(data);
                 
+                if (importedData.length === 0) {
+                    hideLoading();
+                    showNotification('Aucune donnée valide trouvée dans le fichier Excel', 'error');
+                    // Réinitialiser l'input file
+                    event.target.value = '';
+                    return;
+                }
+
+                // Trier les données d'abord par année (exercice) puis par DAO N° (ordre croissant)
+                importedData.sort((a, b) => {
+                    if (a.exercise !== b.exercise) {
+                        return b.exercise - a.exercise; // Ordre décroissant pour les années
+                    }
+                    return a.daoNumber.localeCompare(b.daoNumber); // Ordre croissant pour les DAO
+                });
+
                 // Sauvegarder chaque société importée
                 let importedCount = 0;
+                let errors = 0;
+
                 for (const company of importedData) {
-                    const success = await saveCompanyToFirebase(company, true);
-                    if (success) {
-                        importedCount++;
+                    try {
+                        const success = await saveCompanyToFirebase(company, true);
+                        if (success) {
+                            importedCount++;
+                        } else {
+                            errors++;
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de la sauvegarde:', error);
+                        errors++;
                     }
                 }
-                
-                // Recharger les données
+
+                // Recharger les données depuis Firebase
                 await loadCompaniesFromFirebase();
                 
                 hideLoading();
-                showNotification(`${importedCount} sociétés importées avec succès et triées par exercice/DAO`, 'success');
+                
+                if (errors === 0) {
+                    showNotification(`${importedCount} sociétés importées avec succès depuis le fichier Excel ! Triées par année/DAO.`, 'success');
+                } else {
+                    showNotification(`${importedCount} sociétés importées, ${errors} erreurs.`, importedCount > 0 ? 'success' : 'error');
+                }
+                
             } catch (error) {
-                console.error('Erreur lors de l\'importation:', error);
+                console.error('Erreur lors de l\'importation du fichier Excel:', error);
                 hideLoading();
-                showNotification('Erreur lors de l\'importation des données', 'error');
+                showNotification('Erreur lors de l\'importation du fichier Excel: ' + error.message, 'error');
+            } finally {
+                // Réinitialiser l'input file
+                event.target.value = '';
             }
         }
 
-        // Exportation vers Excel - CORRIGÉE (télécharge un vrai fichier Excel)
+        // Lire le fichier Excel
+        function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        // Prendre la première feuille
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        
+                        // Convertir en JSON
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        resolve(jsonData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = function(error) {
+                    reject(error);
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Traiter les données Excel et les convertir au format attendu
+        function processExcelData(excelData) {
+            const companies = [];
+            
+            // Supposer que la première ligne contient les en-têtes
+            if (excelData.length < 2) {
+                return companies;
+            }
+
+            const headers = excelData[0].map(header => header ? header.toString().trim().toLowerCase() : '');
+            
+            // Parcourir les lignes de données (en ignorant la première ligne d'en-têtes)
+            for (let i = 1; i < excelData.length; i++) {
+                const row = excelData[i];
+                if (!row || row.length === 0) continue;
+
+                // Mapper les colonnes Excel aux champs de l'application
+                // Cette fonction s'adapte aux différents noms de colonnes possibles
+                const company = mapExcelRowToCompany(row, headers);
+                
+                if (company && isValidCompany(company)) {
+                    companies.push(company);
+                }
+            }
+            
+            return companies;
+        }
+
+        // Mapper une ligne Excel vers l'objet company
+        function mapExcelRowToCompany(row, headers) {
+            const company = {
+                status: 'pending'
+            };
+
+            // Mapping flexible des colonnes
+            headers.forEach((header, index) => {
+                const value = row[index] ? row[index].toString().trim() : '';
+                
+                if (header.includes('dao') || header.includes('numero') || header.includes('n°')) {
+                    company.daoNumber = value;
+                } else if (header.includes('exercice') || header.includes('annee') || header.includes('année')) {
+                    company.exercise = parseInt(value) || new Date().getFullYear();
+                } else if (header.includes('objet')) {
+                    company.object = value;
+                } else if (header.includes('societe') || header.includes('société') || header.includes('entreprise')) {
+                    company.company = value;
+                } else if (header.includes('adresse')) {
+                    company.address = value;
+                } else if ((header.includes('rc') || header.includes('registre')) && !header.includes('ville')) {
+                    company.rcNumber = value;
+                } else if (header.includes('ville') && header.includes('rc')) {
+                    company.rcCity = value;
+                } else if (header.includes('ice')) {
+                    company.ice = value;
+                } else if (header.includes('if') || header.includes('identifiant fiscal')) {
+                    company.ifNumber = value;
+                } else if (header.includes('cnss')) {
+                    company.cnss = value;
+                } else if (header.includes('tel') || header.includes('telephone') || header.includes('téléphone')) {
+                    company.phone = value;
+                } else if (header.includes('fax')) {
+                    company.fax = value;
+                } else if (header.includes('email') || header.includes('e-mail') || header.includes('courriel')) {
+                    company.email = value;
+                }
+            });
+
+            return company;
+        }
+
+        // Valider qu'une société a les champs obligatoires
+        function isValidCompany(company) {
+            const requiredFields = ['daoNumber', 'exercise', 'object', 'company', 'address', 'rcNumber', 'rcCity', 'email'];
+            
+            for (const field of requiredFields) {
+                if (!company[field] || company[field].toString().trim() === '') {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Exportation vers Excel
         function handleExportExcel() {
             showLoading();
             
@@ -1147,7 +1300,7 @@
             }
         }
 
-        // Exportation vers PDF - CORRIGÉE (télécharge un vrai fichier PDF)
+        // Exportation vers PDF
         function handleExportPdf() {
             showLoading();
             
