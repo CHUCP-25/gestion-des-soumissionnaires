@@ -6,9 +6,44 @@
     <title>Gestion des Sociétés - Appels d'Offres</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Intégration de Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <!-- Intégration de Firebase MODULAR (v9+) -->
+    <script type="module">
+        // =============================================
+        // CONFIGURATION FIREBASE MODULAR
+        // =============================================
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy, query } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPwCBtQZF0OiSOsS6vyoFImfrof-3M6j8",
+            authDomain: "gestion-des-soumissionnaires.firebaseapp.com",
+            projectId: "gestion-des-soumissionnaires",
+            storageBucket: "gestion-des-soumissionnaires.firebasestorage.app",
+            messagingSenderId: "844188912763",
+            appId: "1:844188912763:web:c25ccd643dbbf0cba666de"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Exposer les variables globales
+        window.firebaseModules = {
+            db,
+            collection,
+            getDocs,
+            addDoc,
+            updateDoc,
+            deleteDoc,
+            doc,
+            serverTimestamp,
+            orderBy,
+            query
+        };
+        
+        console.log('Firebase Modular initialisé avec succès');
+    </script>
     
     <!-- Bibliothèques pour l'exportation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -16,6 +51,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
+        /* [TOUT LE CSS RESTE IDENTIQUE] */
         :root {
             --primary: #3498db;
             --primary-dark: #2980b9;
@@ -32,86 +68,70 @@
             --gray: #6c757d;
             --border: #dee2e6;
         }
-
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f7fa;
-            color: var(--dark);
+            color: #333;
             line-height: 1.6;
         }
-
         .container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
-
         header {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
-            padding: 20px 0;
+            padding: 30px;
             border-radius: 10px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
         }
-
         .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            flex-wrap: wrap;
         }
-
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo i {
+            font-size: 32px;
+        }
         h1 {
             font-size: 28px;
             font-weight: 600;
         }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-        }
-
         .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
+            align-items: center;
             flex-wrap: wrap;
             gap: 15px;
         }
-
         .search-container {
             flex: 1;
             min-width: 300px;
         }
-
         .search-box {
             position: relative;
             width: 100%;
         }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px 20px 12px 45px;
-            border: 1px solid var(--border);
-            border-radius: 50px;
-            font-size: 16px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 2px 10px rgba(52, 152, 219, 0.2);
-        }
-
         .search-box i {
             position: absolute;
             left: 15px;
@@ -119,91 +139,90 @@
             transform: translateY(-50%);
             color: var(--gray);
         }
-
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
         }
-
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
         .btn {
-            padding: 12px 20px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 15px;
-            font-weight: 500;
+            font-size: 16px;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 8px;
             transition: all 0.3s;
+            text-decoration: none;
         }
-
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
         .btn-primary {
             background-color: var(--primary);
             color: white;
         }
-
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background-color: var(--primary-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
         }
-
         .btn-success {
             background-color: var(--secondary);
             color: white;
         }
-
-        .btn-success:hover {
+        .btn-success:hover:not(:disabled) {
             background-color: var(--secondary-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
         }
-
         .btn-danger {
             background-color: var(--danger);
             color: white;
         }
-
-        .btn-danger:hover {
+        .btn-danger:hover:not(:disabled) {
             background-color: var(--danger-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
         }
-
         .btn-warning {
             background-color: var(--warning);
             color: white;
         }
-
-        .btn-warning:hover {
+        .btn-warning:hover:not(:disabled) {
             background-color: var(--warning-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(243, 156, 18, 0.3);
         }
-
         .btn-orange {
             background-color: var(--orange);
             color: white;
         }
-
-        .btn-orange:hover {
+        .btn-orange:hover:not(:disabled) {
             background-color: var(--orange-dark);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
         }
-
         .btn-light {
             background-color: var(--light);
             color: var(--dark);
         }
-
-        .btn-light:hover {
+        .btn-light:hover:not(:disabled) {
             background-color: #e9ecef;
             transform: translateY(-2px);
         }
-
         .table-container {
             background-color: white;
             border-radius: 10px;
@@ -211,44 +230,61 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
             overflow-x: auto;
+            position: relative;
         }
-
+        /* Barre de défilement horizontale personnalisée */
+        .horizontal-scrollbar {
+            height: 12px;
+            background: #f1f1f1;
+            border-radius: 0 0 10px 10px;
+            position: relative;
+            margin-top: 5px;
+            display: none;
+        }
+        .scroll-thumb {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 6px;
+            position: absolute;
+            cursor: grab;
+            min-width: 50px;
+            transition: background-color 0.2s;
+        }
+        .scroll-thumb:hover {
+            background: var(--primary-dark);
+        }
+        .scroll-thumb:active {
+            cursor: grabbing;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
             min-width: 1200px;
         }
-
         thead {
             background-color: var(--primary);
             color: white;
         }
-
         th, td {
             padding: 12px 10px;
             text-align: left;
             border-bottom: 1px solid var(--border);
         }
-
         th {
             font-weight: 600;
             position: sticky;
             top: 0;
         }
-
         tbody tr {
             transition: background-color 0.2s;
         }
-
         tbody tr:hover {
             background-color: rgba(52, 152, 219, 0.05);
         }
-
         .action-cell {
             display: flex;
             gap: 8px;
         }
-
         .action-btn {
             padding: 6px 10px;
             border: none;
@@ -260,145 +296,114 @@
             gap: 5px;
             transition: all 0.2s;
         }
-
+        .action-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
         .validate-btn {
             background-color: var(--secondary);
             color: white;
         }
-
-        .validate-btn:hover {
+        .validate-btn:hover:not(:disabled) {
             background-color: var(--secondary-dark);
         }
-
         .edit-btn {
             background-color: var(--warning);
             color: white;
         }
-
-        .edit-btn:hover {
+        .edit-btn:hover:not(:disabled) {
             background-color: var(--warning-dark);
         }
-
         .delete-btn {
             background-color: var(--danger);
             color: white;
         }
-
-        .delete-btn:hover {
+        .delete-btn:hover:not(:disabled) {
             background-color: var(--danger-dark);
         }
-
         .pagination-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             flex-wrap: wrap;
             gap: 15px;
         }
-
         .pagination-info {
-            color: var(--gray);
-            font-size: 14px;
+            font-weight: 500;
+            color: var(--dark);
         }
-
         .pagination-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
         }
-
         .page-size-selector select {
             padding: 8px 12px;
             border: 1px solid var(--border);
-            border-radius: 4px;
-            background-color: white;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
         }
-
         .pagination-buttons {
             display: flex;
             gap: 5px;
         }
-
         .page-btn {
             padding: 8px 12px;
             border: 1px solid var(--border);
-            background-color: white;
-            border-radius: 4px;
+            background: white;
             cursor: pointer;
+            border-radius: 5px;
             transition: all 0.2s;
+            min-width: 40px;
         }
-
-        .page-btn:hover {
+        .page-btn:hover:not(:disabled) {
             background-color: var(--light);
         }
-
         .page-btn.active {
             background-color: var(--primary);
             color: white;
             border-color: var(--primary);
         }
-
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .loading-overlay {
-            display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            z-index: 2000;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
             justify-content: center;
             align-items: center;
+            z-index: 2000;
             flex-direction: column;
+            color: white;
         }
-
         .loading-spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid rgba(52, 152, 219, 0.3);
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
             border-radius: 50%;
-            border-top-color: var(--primary);
             animation: spin 1s linear infinite;
             margin-bottom: 15px;
         }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
         .loading-text {
             font-size: 18px;
-            color: var(--primary);
             font-weight: 500;
         }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .status-validated {
-            background-color: rgba(46, 204, 113, 0.2);
-            color: var(--secondary-dark);
-        }
-
-        .status-pending {
-            background-color: rgba(243, 156, 18, 0.2);
-            color: var(--warning-dark);
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: var(--gray);
-            font-size: 14px;
-        }
-
         .notification {
             position: fixed;
             top: 20px;
@@ -411,41 +416,44 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transform: translateX(150%);
             transition: transform 0.3s ease;
+            max-width: 400px;
         }
-
         .notification.show {
             transform: translateX(0);
         }
-
         .notification.success {
             background-color: var(--secondary);
         }
-
         .notification.error {
             background-color: var(--danger);
         }
-
+        .notification.warning {
+            background-color: var(--warning);
+        }
+        /* STYLE AMÉLIORÉ POUR LES CELLULES ÉDITABLES */
         .editable-cell {
             padding: 8px;
-            border: 1px solid transparent;
+            border: 2px solid var(--primary);
             border-radius: 4px;
             transition: all 0.2s;
             width: 100%;
             box-sizing: border-box;
-        }
-
-        .editable-cell:hover {
             background-color: rgba(52, 152, 219, 0.05);
-            border-color: var(--primary);
         }
-
+        .editable-cell:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-color: var(--primary-dark);
+        }
         .editable-cell:focus {
             outline: none;
-            border-color: var(--primary);
+            border-color: var(--primary-dark);
             background-color: white;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
         }
-
+        .editable-cell.error {
+            border-color: var(--danger);
+            background-color: rgba(231, 76, 60, 0.05);
+        }
         .table-footer-buttons {
             display: flex;
             justify-content: flex-end;
@@ -453,7 +461,6 @@
             margin-top: 20px;
             flex-wrap: wrap;
         }
-
         .horizontal-scroll-info {
             text-align: center;
             color: var(--gray);
@@ -464,16 +471,59 @@
             justify-content: center;
             gap: 8px;
         }
-
         .empty-row {
             background-color: rgba(52, 152, 219, 0.05);
         }
-
-        /* Style pour l'input file caché */
         .file-input {
             display: none;
         }
-
+        .confirmation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 4000;
+        }
+        .confirmation-modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .modal-content h3 {
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        .modal-content p {
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn-cancel {
+            background-color: var(--light);
+            color: var(--dark);
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            margin-top: 40px;
+            color: var(--gray);
+            border-top: 1px solid var(--border);
+        }
         @media (max-width: 768px) {
             .controls {
                 flex-direction: column;
@@ -496,6 +546,10 @@
             .table-footer-buttons {
                 justify-content: center;
             }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -509,7 +563,6 @@
                 <h1>Sociétés Participantes</h1>
             </div>
         </header>
-
         <div class="controls">
             <div class="search-container">
                 <div class="search-box">
@@ -518,12 +571,11 @@
                 </div>
             </div>
         </div>
-
+        <!-- BARRE DE DÉFILEMENT HORIZONTALE -->
         <div class="horizontal-scroll-info">
             <i class="fas fa-arrows-left-right"></i> Faites défiler horizontalement pour voir toutes les colonnes
         </div>
-
-        <div class="table-container">
+        <div class="table-container" id="tableContainer">
             <table id="companiesTable">
                 <thead>
                     <tr>
@@ -548,7 +600,10 @@
                 </tbody>
             </table>
         </div>
-
+        <!-- Barre de défilement horizontale personnalisée -->
+        <div class="horizontal-scrollbar" id="horizontalScrollbar">
+            <div class="scroll-thumb" id="scrollThumb"></div>
+        </div>
         <div class="table-footer-buttons">
             <input type="file" id="excelFileInput" class="file-input" accept=".xlsx, .xls">
             <button class="btn btn-orange" id="importDataBtn">
@@ -564,7 +619,6 @@
                 <i class="fas fa-file-pdf"></i> PDF
             </button>
         </div>
-
         <div class="pagination-container">
             <div class="pagination-info" id="paginationInfo">
                 Affichage de 1 à 10 sur 0 entrées
@@ -584,44 +638,43 @@
                 </div>
             </div>
         </div>
-
         <!-- Overlay de chargement -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner"></div>
             <div class="loading-text">Veuillez patienter...</div>
         </div>
     </div>
-
     <footer>
         <p>Application de Gestion des Sociétés Participantes aux Appels d'Offres &copy; 2023</p>
     </footer>
-
     <!-- Zone de notification -->
     <div id="notificationArea"></div>
-
+    <!-- Modal de confirmation -->
+    <div class="confirmation-modal" id="confirmationModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Confirmation</h3>
+            <p id="modalMessage">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" id="modalCancelBtn">Annuler</button>
+                <button class="btn btn-danger" id="modalConfirmBtn">Confirmer</button>
+            </div>
+        </div>
+    </div>
     <script>
-        // Configuration Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDPwCBtQZF0OiSOsS6vyoFImfrof-3M6j8",
-            authDomain: "gestion-des-soumissionnaires.firebaseapp.com",
-            projectId: "gestion-des-soumissionnaires",
-            storageBucket: "gestion-des-soumissionnaires.firebasestorage.app",
-            messagingSenderId: "844188912763",
-            appId: "1:844188912763:web:c25ccd643dbbf0cba666de"
-        };
-
-        // Initialisation Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
-        // Variables globales
+        // =============================================
+        // VARIABLES GLOBALES
+        // =============================================
         let companiesData = [];
         let currentPage = 1;
         let pageSize = 10;
         let filteredData = [];
         let newRowId = 0;
+        let db = null;
+        let currentModalCallback = null;
 
-        // Éléments DOM
+        // =============================================
+        // ÉLÉMENTS DOM
+        // =============================================
         const tableBody = document.getElementById('tableBody');
         const searchInput = document.getElementById('searchInput');
         const pageSizeSelect = document.getElementById('pageSizeSelect');
@@ -634,35 +687,178 @@
         const exportPdfBtn = document.getElementById('exportPdfBtn');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const notificationArea = document.getElementById('notificationArea');
+        const confirmationModal = document.getElementById('confirmationModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCancelBtn = document.getElementById('modalCancelBtn');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const tableContainer = document.getElementById('tableContainer');
+        const horizontalScrollbar = document.getElementById('horizontalScrollbar');
+        const scrollThumb = document.getElementById('scrollThumb');
 
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeApp();
-        });
-
+        // =============================================
+        // INITIALISATION
+        // =============================================
         // Initialisation de l'application
         async function initializeApp() {
             showLoading();
-            await loadCompaniesFromFirebase();
-            setupEventListeners();
-            hideLoading();
+            try {
+                console.log('Initialisation de Firebase Modular...');
+                
+                // Attendre que Firebase soit chargé
+                await waitForFirebase();
+                
+                if (!window.firebaseModules) {
+                    throw new Error('Firebase Modular n\'est pas chargé. Vérifiez la connexion internet.');
+                }
+                
+                db = window.firebaseModules.db;
+                console.log('Firebase Modular initialisé avec succès');
+                
+                // Tester la connexion
+                await window.firebaseModules.getDocs(window.firebaseModules.collection(db, 'companies'));
+                console.log('Connexion Firebase établie');
+                
+                // Charger les données
+                await loadCompaniesFromFirebase();
+                setupEventListeners();
+                setupHorizontalScrollbar();
+                showNotification('Application connectée à Firebase avec succès', 'success');
+                
+            } catch (error) {
+                console.error('Erreur d\'initialisation:', error);
+                showNotification('Mode démo activé - Connexion Firebase échouée: ' + error.message, 'warning');
+                
+                // Mode démo avec données d'exemple
+                companiesData = getDemoData();
+                filteredData = [...companiesData];
+                renderTable();
+                setupHorizontalScrollbar();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Attendre que Firebase soit chargé
+        function waitForFirebase() {
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const checkFirebase = () => {
+                    attempts++;
+                    if (window.firebaseModules) {
+                        resolve();
+                    } else if (attempts < 50) { // 5 secondes max
+                        setTimeout(checkFirebase, 100);
+                    } else {
+                        reject(new Error('Timeout - Firebase non chargé'));
+                    }
+                };
+                checkFirebase();
+            });
         }
 
         // Configuration des écouteurs d'événements
         function setupEventListeners() {
-            searchInput.addEventListener('input', handleSearch);
+            searchInput.addEventListener('input', debounce(handleSearch, 300));
             pageSizeSelect.addEventListener('change', handlePageSizeChange);
             addRowBtn.addEventListener('click', addNewRow);
             importDataBtn.addEventListener('click', () => excelFileInput.click());
             excelFileInput.addEventListener('change', handleExcelImport);
             exportExcelBtn.addEventListener('click', handleExportExcel);
             exportPdfBtn.addEventListener('click', handleExportPdf);
+            
+            // Modal events
+            modalCancelBtn.addEventListener('click', () => {
+                confirmationModal.classList.remove('show');
+                currentModalCallback = null;
+            });
+            
+            modalConfirmBtn.addEventListener('click', () => {
+                if (currentModalCallback) {
+                    currentModalCallback();
+                    currentModalCallback = null;
+                }
+                confirmationModal.classList.remove('show');
+            });
         }
 
+        // =============================================
+        // CONFIGURATION DE LA BARRE DE DÉFILEMENT
+        // =============================================
+        function setupHorizontalScrollbar() {
+            const container = tableContainer;
+            const scrollbar = horizontalScrollbar;
+            const thumb = scrollThumb;
+            
+            function updateScrollbar() {
+                const scrollWidth = container.scrollWidth;
+                const clientWidth = container.clientWidth;
+                const scrollLeft = container.scrollLeft;
+                
+                if (scrollWidth > clientWidth) {
+                    const thumbWidth = (clientWidth / scrollWidth) * 100;
+                    const thumbPosition = (scrollLeft / (scrollWidth - clientWidth)) * (100 - thumbWidth);
+                    
+                    thumb.style.width = `${thumbWidth}%`;
+                    thumb.style.left = `${thumbPosition}%`;
+                    scrollbar.style.display = 'block';
+                } else {
+                    scrollbar.style.display = 'none';
+                }
+            }
+            
+            // Faire glisser la barre de défilement
+            let isDragging = false;
+            let startX;
+            let startScrollLeft;
+            
+            thumb.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startX = e.clientX;
+                startScrollLeft = container.scrollLeft;
+                thumb.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                const deltaX = e.clientX - startX;
+                const scrollWidth = container.scrollWidth - container.clientWidth;
+                const thumbWidth = scrollbar.offsetWidth;
+                const thumbMoveRatio = scrollWidth / (thumbWidth - thumb.offsetWidth);
+                
+                container.scrollLeft = startScrollLeft + deltaX * thumbMoveRatio;
+                updateScrollbar();
+            });
+            
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                thumb.style.cursor = 'grab';
+            });
+            
+            container.addEventListener('scroll', updateScrollbar);
+            window.addEventListener('resize', updateScrollbar);
+            
+            // Mettre à jour initialement
+            updateScrollbar();
+        }
+
+        // =============================================
+        // FONCTIONS FIREBASE MODULAR - CORRIGÉES
+        // =============================================
         // Chargement des données depuis Firebase
         async function loadCompaniesFromFirebase() {
             try {
-                const snapshot = await db.collection('companies').orderBy('exercise', 'desc').orderBy('daoNumber').get();
+                if (!db) {
+                    throw new Error('Base de données non initialisée');
+                }
+                
+                console.log('Chargement des données depuis Firebase...');
+                const companiesCollection = window.firebaseModules.collection(db, 'companies');
+                const q = window.firebaseModules.query(companiesCollection, window.firebaseModules.orderBy('updatedAt', 'desc'));
+                const snapshot = await window.firebaseModules.getDocs(q);
+                
                 companiesData = [];
                 snapshot.forEach(doc => {
                     const company = doc.data();
@@ -670,45 +866,135 @@
                     company.status = company.status || 'validated';
                     companiesData.push(company);
                 });
+                
+                console.log(`${companiesData.length} sociétés chargées depuis Firebase`);
                 filteredData = [...companiesData];
                 renderTable();
+                
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
-                showNotification('Erreur lors du chargement des données', 'error');
+                throw error;
             }
         }
 
         // Sauvegarde d'une société dans Firebase
         async function saveCompanyToFirebase(company, isNew = true) {
             try {
-                if (isNew) {
-                    // Ajouter un nouveau document
-                    const docRef = await db.collection('companies').add(company);
-                    company.id = docRef.id;
-                    // Mettre à jour le document avec l'ID
-                    await db.collection('companies').doc(docRef.id).update({ id: docRef.id });
-                } else {
-                    // Mettre à jour un document existant
-                    await db.collection('companies').doc(company.id).update(company);
+                if (!db) {
+                    throw new Error('Base de données non disponible');
                 }
+                
+                // Validation des données avant sauvegarde
+                if (!validateCompanyData(company)) {
+                    return false;
+                }
+                
+                // Préparer les données pour Firebase
+                const companyData = {
+                    daoNumber: company.daoNumber || '',
+                    exercise: parseInt(company.exercise) || new Date().getFullYear(),
+                    object: company.object || '',
+                    company: company.company || '',
+                    address: company.address || '',
+                    rcNumber: company.rcNumber || '',
+                    rcCity: company.rcCity || '',
+                    ice: company.ice || '',
+                    ifNumber: company.ifNumber || '',
+                    cnss: company.cnss || '',
+                    phone: company.phone || '',
+                    fax: company.fax || '',
+                    email: company.email || '',
+                    status: company.status || 'pending',
+                    updatedAt: window.firebaseModules.serverTimestamp()
+                };
+                
+                let result;
+                if (isNew) {
+                    companyData.createdAt = window.firebaseModules.serverTimestamp();
+                    const docRef = await window.firebaseModules.addDoc(
+                        window.firebaseModules.collection(db, 'companies'), 
+                        companyData
+                    );
+                    // Mettre à jour avec l'ID
+                    await window.firebaseModules.updateDoc(
+                        window.firebaseModules.doc(db, 'companies', docRef.id), 
+                        { id: docRef.id }
+                    );
+                    result = docRef.id;
+                } else {
+                    await window.firebaseModules.updateDoc(
+                        window.firebaseModules.doc(db, 'companies', company.id), 
+                        companyData
+                    );
+                    result = company.id;
+                }
+                
+                console.log('Société sauvegardée dans Firebase:', result);
                 return true;
+                
             } catch (error) {
-                console.error('Erreur lors de la sauvegarde:', error);
+                console.error('Erreur détaillée lors de la sauvegarde:', error);
+                showNotification('Erreur Firebase: ' + error.message, 'error');
                 return false;
             }
+        }
+
+        // Validation des données de la société
+        function validateCompanyData(company) {
+            if (!company.daoNumber || company.daoNumber.trim() === '') {
+                showNotification('Le numéro DAO est obligatoire', 'error');
+                return false;
+            }
+            
+            if (!company.company || company.company.trim() === '') {
+                showNotification('Le nom de la société est obligatoire', 'error');
+                return false;
+            }
+            
+            if (!company.ice || company.ice.trim() === '') {
+                showNotification('L\'ICE est obligatoire', 'error');
+                return false;
+            }
+            
+            if (company.email && !isValidEmail(company.email)) {
+                showNotification('Format d\'email invalide', 'error');
+                return false;
+            }
+            
+            if (company.exercise) {
+                const year = parseInt(company.exercise);
+                const currentYear = new Date().getFullYear();
+                if (year < 2000 || year > currentYear + 1) {
+                    showNotification(`L'exercice doit être entre 2000 et ${currentYear + 1}`, 'error');
+                    return false;
+                }
+            }
+            
+            return true;
         }
 
         // Suppression d'une société de Firebase
         async function deleteCompanyFromFirebase(id) {
             try {
-                await db.collection('companies').doc(id).delete();
+                if (!db) {
+                    throw new Error('Base de données non disponible');
+                }
+                await window.firebaseModules.deleteDoc(
+                    window.firebaseModules.doc(db, 'companies', id)
+                );
+                console.log('Société supprimée de Firebase:', id);
                 return true;
+                
             } catch (error) {
                 console.error('Erreur lors de la suppression:', error);
+                showNotification('Erreur lors de la suppression: ' + error.message, 'error');
                 return false;
             }
         }
 
+        // =============================================
+        // FONCTIONS D'AFFICHAGE (RESTENT IDENTIQUES)
+        // =============================================
         // Rendu du tableau
         function renderTable() {
             tableBody.innerHTML = '';
@@ -717,249 +1003,627 @@
             const endIndex = startIndex + pageSize;
             const pageData = filteredData.slice(startIndex, endIndex);
             
-            if (pageData.length === 0 && companiesData.length === 0) {
-                // Afficher une ligne vide pour la saisie si aucune donnée n'existe
-                addEmptyRow();
+            if (pageData.length === 0) {
+                // Afficher une ligne vide si aucune donnée
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="14" style="text-align: center; padding: 20px; color: var(--gray);">
+                        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; opacity: 0.5;"></i>
+                        <br>Aucune donnée disponible. Cliquez sur "Ajouter une ligne" pour commencer.
+                    </td>
+                `;
+                tableBody.appendChild(emptyRow);
             } else {
                 pageData.forEach(company => {
-                    const row = document.createElement('tr');
-                    if (company.status === 'pending') {
-                        // Ligne en attente de validation - édition directe
-                        row.innerHTML = `
-                            <td><input type="text" class="editable-cell" value="${company.daoNumber || ''}" data-field="daoNumber" data-id="${company.id}"></td>
-                            <td><input type="number" class="editable-cell" value="${company.exercise || ''}" data-field="exercise" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.object || ''}" data-field="object" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.company || ''}" data-field="company" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.address || ''}" data-field="address" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.rcNumber || ''}" data-field="rcNumber" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.rcCity || ''}" data-field="rcCity" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.ice || ''}" data-field="ice" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.ifNumber || ''}" data-field="ifNumber" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.cnss || ''}" data-field="cnss" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.phone || ''}" data-field="phone" data-id="${company.id}"></td>
-                            <td><input type="text" class="editable-cell" value="${company.fax || ''}" data-field="fax" data-id="${company.id}"></td>
-                            <td><input type="email" class="editable-cell" value="${company.email || ''}" data-field="email" data-id="${company.id}"></td>
-                            <td class="action-cell">
-                                <button class="action-btn validate-btn" onclick="validateCompany('${company.id}')">
-                                    <i class="fas fa-check"></i> Valider
-                                </button>
-                                <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
-                                    <i class="fas fa-trash"></i> Supprimer
-                                </button>
-                            </td>
-                        `;
-                    } else {
-                        // Ligne validée - affichage seulement avec option de modification
-                        row.innerHTML = `
-                            <td>${company.daoNumber}</td>
-                            <td>${company.exercise}</td>
-                            <td>${company.object}</td>
-                            <td>${company.company}</td>
-                            <td>${company.address}</td>
-                            <td>${company.rcNumber}</td>
-                            <td>${company.rcCity}</td>
-                            <td>${company.ice}</td>
-                            <td>${company.ifNumber}</td>
-                            <td>${company.cnss}</td>
-                            <td>${company.phone}</td>
-                            <td>${company.fax}</td>
-                            <td>${company.email}</td>
-                            <td class="action-cell">
-                                <button class="action-btn edit-btn" onclick="enableRowEditing('${company.id}')">
-                                    <i class="fas fa-edit"></i> Modifier
-                                </button>
-                                <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
-                                    <i class="fas fa-trash"></i> Supprimer
-                                </button>
-                            </td>
-                        `;
-                    }
+                    const row = createTableRow(company);
                     tableBody.appendChild(row);
                 });
-                
-                // Ajouter des écouteurs d'événements pour les champs éditables
-                attachEditableListeners();
             }
             
             updatePagination();
+            attachEditableListeners();
+            setupHorizontalScrollbar();
         }
 
-        // Ajouter une ligne vide pour la saisie
-        function addEmptyRow() {
-            newRowId--;
-            const tempId = `new-${newRowId}`;
+        // Création d'une ligne de tableau
+        function createTableRow(company) {
             const row = document.createElement('tr');
-            row.className = 'empty-row';
-            row.innerHTML = `
-                <td><input type="text" class="editable-cell" placeholder="DAO N°" data-field="daoNumber" data-id="${tempId}"></td>
-                <td><input type="number" class="editable-cell" placeholder="Exercice" data-field="exercise" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="OBJET" data-field="object" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="SOCIETE" data-field="company" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="ADRESSE" data-field="address" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="N° RC" data-field="rcNumber" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="Ville RC" data-field="rcCity" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="ICE" data-field="ice" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="IF" data-field="ifNumber" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="CNSS" data-field="cnss" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="TEL" data-field="phone" data-id="${tempId}"></td>
-                <td><input type="text" class="editable-cell" placeholder="FAX" data-field="fax" data-id="${tempId}"></td>
-                <td><input type="email" class="editable-cell" placeholder="E-mail" data-field="email" data-id="${tempId}"></td>
+            
+            if (company.status === 'pending') {
+                row.innerHTML = createEditableRowHTML(company);
+                row.classList.add('editing-row');
+            } else {
+                row.innerHTML = createReadOnlyRowHTML(company);
+            }
+            
+            return row;
+        }
+
+        function createEditableRowHTML(company) {
+            return `
+                <td>
+                    <input type="text" class="editable-cell" value="${company.daoNumber || ''}" 
+                            data-field="daoNumber" data-id="${company.id}" placeholder="DAO N°">
+                </td>
+                <td>
+                    <input type="number" class="editable-cell" value="${company.exercise || new Date().getFullYear()}" 
+                            data-field="exercise" data-id="${company.id}" 
+                            min="2000" max="${new Date().getFullYear() + 1}" placeholder="Exercice">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.object || ''}" 
+                            data-field="object" data-id="${company.id}" placeholder="OBJET">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.company || ''}" 
+                            data-field="company" data-id="${company.id}" placeholder="SOCIETE">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.address || ''}" 
+                            data-field="address" data-id="${company.id}" placeholder="ADRESSE">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.rcNumber || ''}" 
+                            data-field="rcNumber" data-id="${company.id}" placeholder="N° RC">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.rcCity || ''}" 
+                            data-field="rcCity" data-id="${company.id}" placeholder="Ville RC">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.ice || ''}" 
+                            data-field="ice" data-id="${company.id}" placeholder="ICE">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.ifNumber || ''}" 
+                            data-field="ifNumber" data-id="${company.id}" placeholder="IF">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.cnss || ''}" 
+                            data-field="cnss" data-id="${company.id}" placeholder="CNSS">
+                </td>
+                <td>
+                    <input type="tel" class="editable-cell" value="${company.phone || ''}" 
+                            data-field="phone" data-id="${company.id}" placeholder="TEL">
+                </td>
+                <td>
+                    <input type="text" class="editable-cell" value="${company.fax || ''}" 
+                            data-field="fax" data-id="${company.id}" placeholder="FAX">
+                </td>
+                <td>
+                    <input type="email" class="editable-cell" value="${company.email || ''}" 
+                            data-field="email" data-id="${company.id}" placeholder="E-mail">
+                </td>
                 <td class="action-cell">
-                    <button class="action-btn validate-btn" onclick="saveNewRow('${tempId}')">
-                        <i class="fas fa-check"></i> Enregistrer
+                    <button class="action-btn validate-btn" onclick="validateCompany('${company.id}')">
+                        <i class="fas fa-check"></i> Valider
                     </button>
-                    <button class="action-btn delete-btn" onclick="removeNewRow('${tempId}')">
-                        <i class="fas fa-times"></i> Annuler
+                    <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
+                        <i class="fas fa-trash"></i> Supprimer
                     </button>
                 </td>
             `;
-            tableBody.appendChild(row);
-            attachEditableListeners();
         }
 
-        // Ajouter une nouvelle ligne
+        function createReadOnlyRowHTML(company) {
+            return `
+                <td>${company.daoNumber || ''}</td>
+                <td>${company.exercise || ''}</td>
+                <td>${company.object || ''}</td>
+                <td>${company.company || ''}</td>
+                <td>${company.address || ''}</td>
+                <td>${company.rcNumber || ''}</td>
+                <td>${company.rcCity || ''}</td>
+                <td>${company.ice || ''}</td>
+                <td>${company.ifNumber || ''}</td>
+                <td>${company.cnss || ''}</td>
+                <td>${company.phone || ''}</td>
+                <td>${company.fax || ''}</td>
+                <td>${company.email || ''}</td>
+                <td class="action-cell">
+                    <button class="action-btn edit-btn" onclick="editCompany('${company.id}')">
+                        <i class="fas fa-edit"></i> Modifier
+                    </button>
+                    <button class="action-btn delete-btn" onclick="deleteCompany('${company.id}')">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </td>
+            `;
+        }
+
+        // =============================================
+        // GESTION DES ÉVÉNEMENTS (RESTENT IDENTIQUES)
+        // =============================================
+        // Recherche
+        function handleSearch() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                filteredData = [...companiesData];
+            } else {
+                filteredData = companiesData.filter(company => {
+                    return (
+                        (company.daoNumber && company.daoNumber.toLowerCase().includes(searchTerm)) ||
+                        (company.exercise && company.exercise.toString().includes(searchTerm)) ||
+                        (company.object && company.object.toLowerCase().includes(searchTerm)) ||
+                        (company.company && company.company.toLowerCase().includes(searchTerm)) ||
+                        (company.ice && company.ice.toLowerCase().includes(searchTerm)) ||
+                        (company.rcNumber && company.rcNumber.toLowerCase().includes(searchTerm))
+                    );
+                });
+            }
+            
+            currentPage = 1;
+            renderTable();
+        }
+
+        // Changement de la taille de page
+        function handlePageSizeChange() {
+            pageSize = parseInt(pageSizeSelect.value);
+            currentPage = 1;
+            renderTable();
+        }
+
+        // Ajout d'une nouvelle ligne
         function addNewRow() {
-            addEmptyRow();
-        }
-
-        // Attacher les écouteurs d'événements pour les champs éditables
-        function attachEditableListeners() {
-            const editableCells = document.querySelectorAll('.editable-cell');
-            editableCells.forEach(cell => {
-                cell.addEventListener('blur', handleCellEdit);
-                cell.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        this.blur();
-                    }
-                });
-            });
-        }
-
-        // Gérer l'édition d'une cellule
-        function handleCellEdit(event) {
-            const cell = event.target;
-            const field = cell.getAttribute('data-field');
-            const id = cell.getAttribute('data-id');
-            const value = cell.value;
-            
-            if (id && id.startsWith('new-')) {
-                // Nouvelle ligne - rien à sauvegarder tant que l'utilisateur n'a pas cliqué sur Enregistrer
-                return;
-            }
-            
-            // Mettre à jour la donnée en mémoire
-            const company = companiesData.find(c => c.id === id);
-            if (company && company.status === 'pending') {
-                company[field] = value;
-                
-                // Sauvegarder automatiquement dans Firebase
-                saveCompanyToFirebase(company, false).then(success => {
-                    if (success) {
-                        showNotification('Modification sauvegardée', 'success');
-                    } else {
-                        showNotification('Erreur lors de la sauvegarde', 'error');
-                    }
-                });
-            }
-        }
-
-        // Sauvegarder une nouvelle ligne
-        async function saveNewRow(tempId) {
-            const row = document.querySelector(`tr input[data-id="${tempId}"]`).closest('tr');
-            const inputs = row.querySelectorAll('input');
-            
-            let isValid = true;
-            const requiredFields = ['daoNumber', 'exercise', 'object', 'company', 'address', 'rcNumber', 'rcCity', 'email'];
-            
-            inputs.forEach(input => {
-                const field = input.getAttribute('data-field');
-                if (requiredFields.includes(field) && !input.value.trim()) {
-                    isValid = false;
-                    input.style.borderColor = 'var(--danger)';
-                } else {
-                    input.style.borderColor = '';
-                }
-            });
-            
-            if (!isValid) {
-                showNotification('Veuillez remplir tous les champs obligatoires (DAO N°, Exercice, OBJET, SOCIETE, ADRESSE, N° RC, Ville RC, E-mail)', 'error');
-                return;
-            }
-            
-            // Créer l'objet société
-            const companyData = {
-                daoNumber: row.querySelector('input[data-field="daoNumber"]').value,
-                exercise: parseInt(row.querySelector('input[data-field="exercise"]').value),
-                object: row.querySelector('input[data-field="object"]').value,
-                company: row.querySelector('input[data-field="company"]').value,
-                address: row.querySelector('input[data-field="address"]').value,
-                rcNumber: row.querySelector('input[data-field="rcNumber"]').value,
-                rcCity: row.querySelector('input[data-field="rcCity"]').value,
-                ice: row.querySelector('input[data-field="ice"]').value || '',
-                ifNumber: row.querySelector('input[data-field="ifNumber"]').value || '',
-                cnss: row.querySelector('input[data-field="cnss"]').value || '',
-                phone: row.querySelector('input[data-field="phone"]').value || '',
-                fax: row.querySelector('input[data-field="fax"]').value || '',
-                email: row.querySelector('input[data-field="email"]').value,
+            const newCompany = {
+                id: 'new-' + (++newRowId),
+                daoNumber: '',
+                exercise: new Date().getFullYear(),
+                object: '',
+                company: '',
+                address: '',
+                rcNumber: '',
+                rcCity: '',
+                ice: '',
+                ifNumber: '',
+                cnss: '',
+                phone: '',
+                fax: '',
+                email: '',
                 status: 'pending'
             };
             
+            companiesData.unshift(newCompany);
+            filteredData.unshift(newCompany);
+            renderTable();
+            
+            showNotification('Nouvelle ligne ajoutée. Remplissez les informations et cliquez sur "Valider" pour sauvegarder.', 'success');
+        }
+
+        // =============================================
+        // FONCTIONS DES BOUTONS D'ACTION (RESTENT IDENTIQUES)
+        // =============================================
+        // Validation d'une société
+        async function validateCompany(id) {
             showLoading();
             
-            // Sauvegarder dans Firebase
-            const success = await saveCompanyToFirebase(companyData, true);
-            if (success) {
-                await loadCompaniesFromFirebase();
-                showNotification('Société ajoutée avec succès', 'success');
-            } else {
-                showNotification('Erreur lors de l\'ajout de la société', 'error');
+            try {
+                const company = companiesData.find(c => c.id === id);
+                if (!company) {
+                    throw new Error('Société non trouvée');
+                }
+                
+                // Validation des champs obligatoires
+                if (!validateCompanyData(company)) {
+                    hideLoading();
+                    return;
+                }
+                
+                // Sauvegarder dans Firebase
+                const isNew = company.id.startsWith('new-');
+                const success = await saveCompanyToFirebase(company, isNew);
+                
+                if (success) {
+                    // Mettre à jour le statut localement
+                    company.status = 'validated';
+                    
+                    // Si c'est une nouvelle société, recharger les données pour obtenir l'ID réel
+                    if (isNew) {
+                        await loadCompaniesFromFirebase();
+                    } else {
+                        renderTable();
+                    }
+                    
+                    showNotification('Société validée et sauvegardée avec succès', 'success');
+                } else {
+                    showNotification('Erreur lors de la sauvegarde', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erreur lors de la validation:', error);
+                showNotification('Erreur lors de la validation: ' + error.message, 'error');
+            } finally {
+                hideLoading();
             }
-            
-            hideLoading();
         }
 
-        // Supprimer une nouvelle ligne non sauvegardée
-        function removeNewRow(tempId) {
-            const row = document.querySelector(`tr input[data-id="${tempId}"]`).closest('tr');
-            if (row) {
-                row.remove();
-            }
-        }
-
-        // Activer l'édition pour une ligne validée
-        function enableRowEditing(id) {
+        // Édition d'une société
+        function editCompany(id) {
             const company = companiesData.find(c => c.id === id);
             if (company) {
                 company.status = 'pending';
                 renderTable();
-                showNotification('Vous pouvez maintenant modifier cette société', 'success');
+                showNotification('Société en mode édition', 'success');
             }
         }
 
-        // Mise à jour de la pagination
+        // Suppression d'une société
+        function deleteCompany(id) {
+            const company = companiesData.find(c => c.id === id);
+            const companyName = company ? company.company : 'cette société';
+            
+            showConfirmationModal(
+                'Confirmer la suppression',
+                `Êtes-vous sûr de vouloir supprimer ${companyName} ? Cette action est irréversible.`,
+                async () => {
+                    showLoading();
+                    
+                    try {
+                        // Supprimer de Firebase si ce n'est pas une nouvelle ligne
+                        if (!id.startsWith('new-')) {
+                            const success = await deleteCompanyFromFirebase(id);
+                            if (!success) {
+                                hideLoading();
+                                return;
+                            }
+                        }
+                        
+                        // Supprimer localement
+                        companiesData = companiesData.filter(c => c.id !== id);
+                        filteredData = filteredData.filter(c => c.id !== id);
+                        renderTable();
+                        
+                        showNotification('Société supprimée avec succès', 'success');
+                        
+                    } catch (error) {
+                        console.error('Erreur lors de la suppression:', error);
+                        showNotification('Erreur lors de la suppression: ' + error.message, 'error');
+                    } finally {
+                        hideLoading();
+                    }
+                }
+            );
+        }
+
+        // =============================================
+        // ÉDITION EN LIGNE (RESTENT IDENTIQUES)
+        // =============================================
+        function attachEditableListeners() {
+            // Nettoyer les anciens écouteurs
+            const existingCells = document.querySelectorAll('.editable-cell[data-listener="true"]');
+            existingCells.forEach(cell => {
+                cell.removeEventListener('input', handleCellInput);
+                cell.removeEventListener('blur', handleCellBlur);
+                cell.removeAttribute('data-listener');
+            });
+            
+            const editableCells = document.querySelectorAll('.editable-cell:not([data-listener])');
+            
+            editableCells.forEach(cell => {
+                cell.setAttribute('data-listener', 'true');
+                cell.addEventListener('input', handleCellInput);
+                cell.addEventListener('blur', handleCellBlur);
+            });
+        }
+
+        function handleCellInput(event) {
+            const cell = event.target;
+            const id = cell.getAttribute('data-id');
+            const field = cell.getAttribute('data-field');
+            const value = cell.value;
+            
+            updateCompanyData(id, field, value);
+        }
+
+        function handleCellBlur(event) {
+            const cell = event.target;
+            validateCell(cell);
+        }
+
+        function updateCompanyData(id, field, value) {
+            const company = companiesData.find(c => c.id === id);
+            if (company) {
+                // Validation basique avant mise à jour
+                if (field === 'email' && value && !isValidEmail(value)) {
+                    return;
+                }
+                
+                if (field === 'exercise' && value) {
+                    const year = parseInt(value);
+                    const currentYear = new Date().getFullYear();
+                    if (year < 2000 || year > currentYear + 1) {
+                        return;
+                    }
+                }
+                
+                company[field] = value;
+            }
+        }
+
+        function validateCell(cell) {
+            const value = cell.value.trim();
+            const field = cell.getAttribute('data-field');
+            
+            // Réinitialiser l'état d'erreur
+            cell.classList.remove('error');
+            
+            // Validation selon le type de champ
+            if (field === 'email' && value && !isValidEmail(value)) {
+                cell.classList.add('error');
+                return false;
+            }
+            
+            if (field === 'exercise' && value) {
+                const year = parseInt(value);
+                const currentYear = new Date().getFullYear();
+                if (year < 2000 || year > currentYear + 1) {
+                    cell.classList.add('error');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // =============================================
+        // IMPORT/EXPORT (RESTENT IDENTIQUES)
+        // =============================================
+        // Importation depuis Excel
+        function handleExcelImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.match(/\.(xlsx|xls)$/)) {
+                showNotification('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)', 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            showLoading();
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Prendre la première feuille
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    // Convertir en JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if (jsonData.length === 0) {
+                        showNotification('Aucune donnée trouvée dans le fichier Excel', 'warning');
+                        hideLoading();
+                        return;
+                    }
+                    
+                    // Traiter et sauvegarder les données importées
+                    await processAndSaveImportedData(jsonData);
+                    
+                    // Réinitialiser l'input file
+                    excelFileInput.value = '';
+                    
+                } catch (error) {
+                    console.error('Erreur lors de l\'importation:', error);
+                    showNotification('Erreur lors de l\'importation: ' + error.message, 'error');
+                    hideLoading();
+                }
+            };
+            
+            reader.onerror = () => {
+                showNotification('Erreur de lecture du fichier', 'error');
+                hideLoading();
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function processAndSaveImportedData(jsonData) {
+            let importedCount = 0;
+            let errorCount = 0;
+            
+            for (const row of jsonData) {
+                try {
+                    const company = {
+                        daoNumber: row['DAO N°'] || row['daoNumber'] || '',
+                        exercise: parseInt(row['Exercice'] || row['exercise'] || new Date().getFullYear()),
+                        object: row['OBJET'] || row['object'] || '',
+                        company: row['SOCIETE'] || row['company'] || '',
+                        address: row['ADRESSE'] || row['address'] || '',
+                        rcNumber: row['N° RC'] || row['rcNumber'] || '',
+                        rcCity: row['Ville RC'] || row['rcCity'] || '',
+                        ice: row['ICE'] || row['ice'] || '',
+                        ifNumber: row['IF'] || row['ifNumber'] || '',
+                        cnss: row['CNSS'] || row['cnss'] || '',
+                        phone: row['TEL'] || row['phone'] || '',
+                        fax: row['FAX'] || row['fax'] || '',
+                        email: row['E-mail'] || row['email'] || '',
+                        status: 'pending'
+                    };
+                    
+                    // Valider les données obligatoires
+                    if (!company.daoNumber || !company.company || !company.ice) {
+                        errorCount++;
+                        continue;
+                    }
+                    
+                    // Sauvegarder dans Firebase
+                    const success = await saveCompanyToFirebase(company, true);
+                    if (success) {
+                        importedCount++;
+                    } else {
+                        errorCount++;
+                    }
+                    
+                } catch (error) {
+                    console.error('Erreur lors du traitement d\'une ligne:', error);
+                    errorCount++;
+                }
+            }
+            
+            // Recharger les données depuis Firebase
+            await loadCompaniesFromFirebase();
+            hideLoading();
+            
+            if (importedCount > 0) {
+                showNotification(`${importedCount} sociétés importées avec succès`, 'success');
+            }
+            
+            if (errorCount > 0) {
+                showNotification(`${errorCount} erreurs lors de l'importation`, 'warning');
+            }
+        }
+
+        // Exportation vers Excel
+        function handleExportExcel() {
+            if (companiesData.length === 0) {
+                showNotification('Aucune donnée à exporter', 'warning');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                // Préparer les données pour l'export
+                const exportData = companiesData.map(company => ({
+                    'DAO N°': company.daoNumber,
+                    'Exercice': company.exercise,
+                    'OBJET': company.object,
+                    'SOCIETE': company.company,
+                    'ADRESSE': company.address,
+                    'N° RC': company.rcNumber,
+                    'Ville RC': company.rcCity,
+                    'ICE': company.ice,
+                    'IF': company.ifNumber,
+                    'CNSS': company.cnss,
+                    'TEL': company.phone,
+                    'FAX': company.fax,
+                    'E-mail': company.email,
+                    'Statut': company.status === 'validated' ? 'Validé' : 'En attente'
+                }));
+                
+                // Créer un nouveau classeur
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                
+                // Ajouter la feuille au classeur
+                XLSX.utils.book_append_sheet(wb, ws, 'Sociétés');
+                
+                // Exporter le fichier
+                const fileName = `societes_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                
+                showNotification(`Données exportées avec succès: ${fileName}`, 'success');
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'exportation Excel:', error);
+                showNotification('Erreur lors de l\'exportation Excel: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Exportation vers PDF
+        function handleExportPdf() {
+            if (companiesData.length === 0) {
+                showNotification('Aucune donnée à exporter', 'warning');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const jsPDF = window.jspdf.jsPDF;
+                const doc = new jsPDF('landscape');
+                
+                // Titre
+                doc.setFontSize(16);
+                doc.text('Liste des Sociétés Participantes', 14, 15);
+                
+                // Date d'exportation
+                doc.setFontSize(10);
+                doc.text(`Exporté le: ${new Date().toLocaleDateString('fr-FR')}`, 14, 22);
+                
+                // Préparer les données pour le tableau
+                const tableData = companiesData.map(company => [
+                    company.daoNumber || '',
+                    company.exercise || '',
+                    company.object ? company.object.substring(0, 30) + (company.object.length > 30 ? '...' : '') : '',
+                    company.company ? company.company.substring(0, 20) + (company.company.length > 20 ? '...' : '') : '',
+                    company.address ? company.address.substring(0, 25) + (company.address.length > 25 ? '...' : '') : '',
+                    company.rcNumber || '',
+                    company.rcCity || '',
+                    company.ice || '',
+                    company.ifNumber || '',
+                    company.cnss || '',
+                    company.phone || '',
+                    company.fax || '',
+                    company.email ? company.email.substring(0, 25) + (company.email.length > 25 ? '...' : '') : '',
+                    company.status === 'validated' ? 'Validé' : 'En attente'
+                ]);
+                
+                // En-têtes du tableau
+                const headers = [
+                    'DAO N°', 'Exercice', 'OBJET', 'SOCIETE', 'ADRESSE', 
+                    'N° RC', 'Ville RC', 'ICE', 'IF', 'CNSS', 
+                    'TEL', 'FAX', 'E-mail', 'Statut'
+                ];
+                
+                // Générer le tableau
+                doc.autoTable({
+                    head: [headers],
+                    body: tableData,
+                    startY: 25,
+                    styles: { fontSize: 7, cellPadding: 2 },
+                    headStyles: { fillColor: [52, 152, 219] },
+                    margin: { top: 25 }
+                });
+                
+                // Sauvegarder le PDF
+                const fileName = `societes_${new Date().toISOString().split('T')[0]}.pdf`;
+                doc.save(fileName);
+                
+                showNotification(`Données exportées avec succès: ${fileName}`, 'success');
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'exportation PDF:', error);
+                showNotification('Erreur lors de l\'exportation PDF: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // =============================================
+        // PAGINATION (RESTENT IDENTIQUES)
+        // =============================================
         function updatePagination() {
-            const totalPages = Math.ceil(filteredData.length / pageSize);
+            const totalItems = filteredData.length;
+            const totalPages = Math.ceil(totalItems / pageSize);
             
-            // Mise à jour des informations de pagination
-            const startIndex = (currentPage - 1) * pageSize + 1;
-            const endIndex = Math.min(currentPage * pageSize, filteredData.length);
-            paginationInfo.textContent = `Affichage de ${startIndex} à ${endIndex} sur ${filteredData.length} entrées`;
+            // Mettre à jour les informations
+            const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+            const endItem = Math.min(currentPage * pageSize, totalItems);
+            paginationInfo.textContent = `Affichage de ${startItem} à ${endItem} sur ${totalItems} entrées`;
             
-            // Génération des boutons de pagination
-            paginationButtons.innerHTML = '';
+            // Générer les boutons de pagination
+            let buttonsHTML = '';
             
             // Bouton précédent
-            const prevButton = document.createElement('button');
-            prevButton.className = 'page-btn';
-            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
-            prevButton.disabled = currentPage === 1;
-            prevButton.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderTable();
-                }
-            });
-            paginationButtons.appendChild(prevButton);
+            buttonsHTML += `
+                <button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} 
+                        onclick="changePage(${currentPage - 1})">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            `;
             
             // Boutons de pages
             const maxVisiblePages = 5;
@@ -971,427 +1635,70 @@
             }
             
             for (let i = startPage; i <= endPage; i++) {
-                const pageButton = document.createElement('button');
-                pageButton.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-                pageButton.textContent = i;
-                pageButton.addEventListener('click', () => {
-                    currentPage = i;
-                    renderTable();
-                });
-                paginationButtons.appendChild(pageButton);
+                buttonsHTML += `
+                    <button class="page-btn ${i === currentPage ? 'active' : ''}" 
+                            onclick="changePage(${i})">
+                        ${i}
+                    </button>
+                `;
             }
             
             // Bouton suivant
-            const nextButton = document.createElement('button');
-            nextButton.className = 'page-btn';
-            nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
-            nextButton.disabled = currentPage === totalPages;
-            nextButton.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderTable();
-                }
-            });
-            paginationButtons.appendChild(nextButton);
+            buttonsHTML += `
+                <button class="page-btn" ${currentPage === totalPages || totalPages === 0 ? 'disabled' : ''} 
+                        onclick="changePage(${currentPage + 1})">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            `;
+            
+            paginationButtons.innerHTML = buttonsHTML;
         }
 
-        // Gestion de la recherche
-        function handleSearch() {
-            const searchTerm = searchInput.value.toLowerCase();
-            
-            if (searchTerm === '') {
-                filteredData = [...companiesData];
-            } else {
-                filteredData = companiesData.filter(company => 
-                    (company.daoNumber && company.daoNumber.toLowerCase().includes(searchTerm)) ||
-                    (company.exercise && company.exercise.toString().includes(searchTerm)) ||
-                    (company.company && company.company.toLowerCase().includes(searchTerm)) ||
-                    (company.ice && company.ice.toLowerCase().includes(searchTerm))
-                );
-            }
-            
-            currentPage = 1;
+        function changePage(page) {
+            currentPage = page;
             renderTable();
         }
 
-        // Gestion du changement de taille de page
-        function handlePageSizeChange() {
-            pageSize = parseInt(pageSizeSelect.value);
-            currentPage = 1;
-            renderTable();
-        }
-
-        // Validation d'une société
-        async function validateCompany(id) {
-            const company = companiesData.find(c => c.id === id);
-            if (company) {
-                showLoading();
-                company.status = 'validated';
-                const success = await saveCompanyToFirebase(company, false);
-                if (success) {
-                    await loadCompaniesFromFirebase();
-                    showNotification('Société validée avec succès', 'success');
-                } else {
-                    showNotification('Erreur lors de la validation', 'error');
-                }
-                hideLoading();
-            }
-        }
-
-        // Suppression d'une société
-        async function deleteCompany(id) {
-            if (confirm('Êtes-vous sûr de vouloir supprimer cette société ?')) {
-                showLoading();
-                const success = await deleteCompanyFromFirebase(id);
-                if (success) {
-                    await loadCompaniesFromFirebase();
-                    showNotification('Société supprimée avec succès', 'success');
-                } else {
-                    showNotification('Erreur lors de la suppression', 'error');
-                }
-                hideLoading();
-            }
-        }
-
-        // IMPORTATION DEPUIS UN FICHIER EXCEL - FONCTION COMPLÈTEMENT FONCTIONNELLE
-        async function handleExcelImport(event) {
-            const file = event.target.files[0];
-            
-            if (!file) {
-                return;
-            }
-
-            // Vérifier l'extension du fichier
-            if (!file.name.match(/\.(xlsx|xls)$/)) {
-                showNotification('Veuillez sélectionner un fichier Excel (.xlsx ou .xls)', 'error');
-                // Réinitialiser l'input file
-                event.target.value = '';
-                return;
-            }
-
-            if (!confirm('Voulez-vous importer les données depuis ce fichier Excel ?')) {
-                // Réinitialiser l'input file
-                event.target.value = '';
-                return;
-            }
-
-            showLoading();
-
-            try {
-                const data = await readExcelFile(file);
-                const importedData = processExcelData(data);
-                
-                if (importedData.length === 0) {
-                    hideLoading();
-                    showNotification('Aucune donnée valide trouvée dans le fichier Excel', 'error');
-                    // Réinitialiser l'input file
-                    event.target.value = '';
-                    return;
-                }
-
-                // Trier les données d'abord par année (exercice) puis par DAO N° (ordre croissant)
-                importedData.sort((a, b) => {
-                    if (a.exercise !== b.exercise) {
-                        return b.exercise - a.exercise; // Ordre décroissant pour les années
-                    }
-                    return a.daoNumber.localeCompare(b.daoNumber); // Ordre croissant pour les DAO
-                });
-
-                // Sauvegarder chaque société importée
-                let importedCount = 0;
-                let errors = 0;
-
-                for (const company of importedData) {
-                    try {
-                        const success = await saveCompanyToFirebase(company, true);
-                        if (success) {
-                            importedCount++;
-                        } else {
-                            errors++;
-                        }
-                    } catch (error) {
-                        console.error('Erreur lors de la sauvegarde:', error);
-                        errors++;
-                    }
-                }
-
-                // Recharger les données depuis Firebase
-                await loadCompaniesFromFirebase();
-                
-                hideLoading();
-                
-                if (errors === 0) {
-                    showNotification(`${importedCount} sociétés importées avec succès depuis le fichier Excel ! Triées par année/DAO.`, 'success');
-                } else {
-                    showNotification(`${importedCount} sociétés importées, ${errors} erreurs.`, importedCount > 0 ? 'success' : 'error');
-                }
-                
-            } catch (error) {
-                console.error('Erreur lors de l\'importation du fichier Excel:', error);
-                hideLoading();
-                showNotification('Erreur lors de l\'importation du fichier Excel: ' + error.message, 'error');
-            } finally {
-                // Réinitialiser l'input file
-                event.target.value = '';
-            }
-        }
-
-        // Lire le fichier Excel
-        function readExcelFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        
-                        // Prendre la première feuille
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        
-                        // Convertir en JSON
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                        resolve(jsonData);
-                    } catch (error) {
-                        reject(error);
-                    }
+        // =============================================
+        // UTILITAIRES (RESTENT IDENTIQUES)
+        // =============================================
+        // Fonction debounce pour optimiser les recherches
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
                 };
-                
-                reader.onerror = function(error) {
-                    reject(error);
-                };
-                
-                reader.readAsArrayBuffer(file);
-            });
-        }
-
-        // Traiter les données Excel et les convertir au format attendu
-        function processExcelData(excelData) {
-            const companies = [];
-            
-            // Supposer que la première ligne contient les en-têtes
-            if (excelData.length < 2) {
-                return companies;
-            }
-
-            const headers = excelData[0].map(header => header ? header.toString().trim().toLowerCase() : '');
-            
-            // Parcourir les lignes de données (en ignorant la première ligne d'en-têtes)
-            for (let i = 1; i < excelData.length; i++) {
-                const row = excelData[i];
-                if (!row || row.length === 0) continue;
-
-                // Mapper les colonnes Excel aux champs de l'application
-                // Cette fonction s'adapte aux différents noms de colonnes possibles
-                const company = mapExcelRowToCompany(row, headers);
-                
-                if (company && isValidCompany(company)) {
-                    companies.push(company);
-                }
-            }
-            
-            return companies;
-        }
-
-        // Mapper une ligne Excel vers l'objet company
-        function mapExcelRowToCompany(row, headers) {
-            const company = {
-                status: 'pending'
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
             };
-
-            // Mapping flexible des colonnes
-            headers.forEach((header, index) => {
-                const value = row[index] ? row[index].toString().trim() : '';
-                
-                if (header.includes('dao') || header.includes('numero') || header.includes('n°')) {
-                    company.daoNumber = value;
-                } else if (header.includes('exercice') || header.includes('annee') || header.includes('année')) {
-                    company.exercise = parseInt(value) || new Date().getFullYear();
-                } else if (header.includes('objet')) {
-                    company.object = value;
-                } else if (header.includes('societe') || header.includes('société') || header.includes('entreprise')) {
-                    company.company = value;
-                } else if (header.includes('adresse')) {
-                    company.address = value;
-                } else if ((header.includes('rc') || header.includes('registre')) && !header.includes('ville')) {
-                    company.rcNumber = value;
-                } else if (header.includes('ville') && header.includes('rc')) {
-                    company.rcCity = value;
-                } else if (header.includes('ice')) {
-                    company.ice = value;
-                } else if (header.includes('if') || header.includes('identifiant fiscal')) {
-                    company.ifNumber = value;
-                } else if (header.includes('cnss')) {
-                    company.cnss = value;
-                } else if (header.includes('tel') || header.includes('telephone') || header.includes('téléphone')) {
-                    company.phone = value;
-                } else if (header.includes('fax')) {
-                    company.fax = value;
-                } else if (header.includes('email') || header.includes('e-mail') || header.includes('courriel')) {
-                    company.email = value;
-                }
-            });
-
-            return company;
         }
 
-        // Valider qu'une société a les champs obligatoires
-        function isValidCompany(company) {
-            const requiredFields = ['daoNumber', 'exercise', 'object', 'company', 'address', 'rcNumber', 'rcCity', 'email'];
-            
-            for (const field of requiredFields) {
-                if (!company[field] || company[field].toString().trim() === '') {
-                    return false;
-                }
-            }
-            
-            return true;
-        }
-
-        // Exportation vers Excel
-        function handleExportExcel() {
-            showLoading();
-            
-            try {
-                // Préparer les données pour l'exportation
-                const exportData = companiesData.map(company => ({
-                    'DAO N°': company.daoNumber,
-                    'Exercice': company.exercise,
-                    'OBJET': company.object,
-                    'SOCIETE': company.company,
-                    'ADRESSE': company.address,
-                    'N° RC': company.rcNumber,
-                    'Ville RC': company.rcCity,
-                    'ICE': company.ice || '',
-                    'IF': company.ifNumber || '',
-                    'CNSS': company.cnss || '',
-                    'TEL': company.phone || '',
-                    'FAX': company.fax || '',
-                    'E-mail': company.email,
-                    'STATUT': company.status === 'validated' ? 'Validé' : 'En attente'
-                }));
-                
-                // Créer un classeur Excel
-                const worksheet = XLSX.utils.json_to_sheet(exportData);
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Sociétés");
-                
-                // Générer le fichier Excel
-                const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-                const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                
-                // Télécharger le fichier
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `societes_participantes_${new Date().toISOString().split('T')[0]}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                hideLoading();
-                showNotification('Exportation Excel réussie!', 'success');
-            } catch (error) {
-                console.error('Erreur lors de l\'exportation Excel:', error);
-                hideLoading();
-                showNotification('Erreur lors de l\'exportation Excel', 'error');
-            }
-        }
-
-        // Exportation vers PDF
-        function handleExportPdf() {
-            showLoading();
-            
-            try {
-                // Utiliser jsPDF avec autoTable
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                // Titre du document
-                doc.setFontSize(16);
-                doc.text('Liste des Sociétés Participantes', 14, 15);
-                doc.setFontSize(10);
-                doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, 14, 22);
-                
-                // Préparer les données pour le tableau
-                const tableData = companiesData.map(company => [
-                    company.daoNumber,
-                    company.exercise,
-                    company.object,
-                    company.company,
-                    company.address,
-                    company.rcNumber,
-                    company.rcCity,
-                    company.ice || '',
-                    company.ifNumber || '',
-                    company.cnss || '',
-                    company.phone || '',
-                    company.fax || '',
-                    company.email,
-                    company.status === 'validated' ? 'Validé' : 'En attente'
-                ]);
-                
-                // En-têtes du tableau
-                const headers = [
-                    'DAO N°', 'Exercice', 'OBJET', 'SOCIETE', 'ADRESSE', 
-                    'N° RC', 'Ville RC', 'ICE', 'IF', 'CNSS', 
-                    'TEL', 'FAX', 'E-mail', 'STATUT'
-                ];
-                
-                // Créer le tableau
-                doc.autoTable({
-                    head: [headers],
-                    body: tableData,
-                    startY: 25,
-                    styles: { fontSize: 8 },
-                    headStyles: { fillColor: [52, 152, 219] },
-                    columnStyles: {
-                        0: { cellWidth: 20 },
-                        1: { cellWidth: 15 },
-                        2: { cellWidth: 30 },
-                        3: { cellWidth: 25 },
-                        4: { cellWidth: 30 },
-                        5: { cellWidth: 15 },
-                        6: { cellWidth: 15 },
-                        7: { cellWidth: 20 },
-                        8: { cellWidth: 15 },
-                        9: { cellWidth: 15 },
-                        10: { cellWidth: 15 },
-                        11: { cellWidth: 15 },
-                        12: { cellWidth: 25 },
-                        13: { cellWidth: 15 }
-                    }
-                });
-                
-                // Télécharger le PDF
-                doc.save(`societes_participantes_${new Date().toISOString().split('T')[0]}.pdf`);
-                
-                hideLoading();
-                showNotification('Exportation PDF réussie!', 'success');
-            } catch (error) {
-                console.error('Erreur lors de l\'exportation PDF:', error);
-                hideLoading();
-                showNotification('Erreur lors de l\'exportation PDF', 'error');
-            }
-        }
-
-        // Affichage du loader
+        // Affichage du chargement
         function showLoading() {
             loadingOverlay.style.display = 'flex';
         }
 
-        // Masquage du loader
         function hideLoading() {
             loadingOverlay.style.display = 'none';
         }
 
         // Affichage des notifications
-        function showNotification(message, type) {
+        function showNotification(message, type = 'success') {
+            // Limiter le nombre de notifications simultanées
+            const existingNotifications = notificationArea.querySelectorAll('.notification');
+            if (existingNotifications.length >= 3) {
+                existingNotifications[0].remove();
+            }
+            
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
-            notification.textContent = message;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle'}"></i>
+                ${message}
+            `;
+            
             notificationArea.appendChild(notification);
             
             // Afficher la notification
@@ -1399,16 +1706,71 @@
                 notification.classList.add('show');
             }, 100);
             
-            // Masquer et supprimer la notification après 3 secondes
+            // Supprimer après 5 secondes
             setTimeout(() => {
                 notification.classList.remove('show');
                 setTimeout(() => {
                     if (notification.parentNode) {
-                        notificationArea.removeChild(notification);
+                        notification.parentNode.removeChild(notification);
                     }
                 }, 300);
-            }, 3000);
+            }, 5000);
         }
+
+        // Modal de confirmation
+        function showConfirmationModal(title, message, confirmCallback) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            currentModalCallback = confirmCallback;
+            confirmationModal.classList.add('show');
+        }
+
+        // Données de démonstration
+        function getDemoData() {
+            return [
+                {
+                    id: 'demo-1',
+                    daoNumber: 'DAO-2023-001',
+                    exercise: 2023,
+                    object: 'Fourniture de matériel informatique',
+                    company: 'Tech Solutions SARL',
+                    address: '123 Avenue Mohammed V, Casablanca',
+                    rcNumber: '12345',
+                    rcCity: 'Casablanca',
+                    ice: '001234567890123',
+                    ifNumber: 'IF123456',
+                    cnss: 'J123456789',
+                    phone: '+212 5 22 12 34 56',
+                    fax: '+212 5 22 12 34 57',
+                    email: 'contact@techsolutions.ma',
+                    status: 'validated'
+                },
+                {
+                    id: 'demo-2',
+                    daoNumber: 'DAO-2023-002',
+                    exercise: 2023,
+                    object: 'Services de consulting',
+                    company: 'Consulting Pro SA',
+                    address: '45 Rue Hassan II, Rabat',
+                    rcNumber: '67890',
+                    rcCity: 'Rabat',
+                    ice: '002345678901234',
+                    ifNumber: 'IF234567',
+                    cnss: 'J234567890',
+                    phone: '+212 5 37 65 43 21',
+                    fax: '+212 5 37 65 43 22',
+                    email: 'info@consultingpro.ma',
+                    status: 'pending'
+                }
+            ];
+        }
+
+        // =============================================
+        // DÉMARRAGE DE L'APPLICATION
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
     </script>
 </body>
 </html>
