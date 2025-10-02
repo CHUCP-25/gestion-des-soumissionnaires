@@ -767,19 +767,38 @@
             exportExcelBtn.addEventListener('click', handleExportExcel);
             exportPdfBtn.addEventListener('click', handleExportPdf);
             
-            // Modal events
-            modalCancelBtn.addEventListener('click', () => {
-                confirmationModal.classList.remove('show');
-                currentModalCallback = null;
-            });
+            // Modal events - CORRECTION APPLIQUÉE ICI
+            modalCancelBtn.addEventListener('click', closeConfirmationModal);
+            modalConfirmBtn.addEventListener('click', executeModalCallback);
             
-            modalConfirmBtn.addEventListener('click', () => {
-                if (currentModalCallback) {
-                    currentModalCallback();
-                    currentModalCallback = null;
+            // Fermer le modal en cliquant en dehors
+            confirmationModal.addEventListener('click', function(e) {
+                if (e.target === confirmationModal) {
+                    closeConfirmationModal();
                 }
-                confirmationModal.classList.remove('show');
             });
+        }
+
+        // =============================================
+        // GESTION DU MODAL DE CONFIRMATION - CORRIGÉE
+        // =============================================
+        function closeConfirmationModal() {
+            confirmationModal.classList.remove('show');
+            currentModalCallback = null;
+        }
+
+        function executeModalCallback() {
+            if (currentModalCallback) {
+                currentModalCallback();
+            }
+            closeConfirmationModal();
+        }
+
+        function showConfirmationModal(title, message, confirmCallback) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            currentModalCallback = confirmCallback;
+            confirmationModal.classList.add('show');
         }
 
         // =============================================
@@ -904,7 +923,7 @@
                     phone: company.phone || '',
                     fax: company.fax || '',
                     email: company.email || '',
-                    status: company.status || 'pending',
+                    status: 'validated', // Toujours marqué comme validé lors de la sauvegarde
                     updatedAt: window.firebaseModules.serverTimestamp()
                 };
                 
@@ -993,7 +1012,7 @@
         }
 
         // =============================================
-        // FONCTIONS D'AFFICHAGE (RESTENT IDENTIQUES)
+        // FONCTIONS D'AFFICHAGE
         // =============================================
         // Rendu du tableau
         function renderTable() {
@@ -1028,6 +1047,7 @@
         // Création d'une ligne de tableau
         function createTableRow(company) {
             const row = document.createElement('tr');
+            row.setAttribute('data-id', company.id);
             
             if (company.status === 'pending') {
                 row.innerHTML = createEditableRowHTML(company);
@@ -1132,7 +1152,7 @@
         }
 
         // =============================================
-        // GESTION DES ÉVÉNEMENTS (RESTENT IDENTIQUES)
+        // GESTION DES ÉVÉNEMENTS
         // =============================================
         // Recherche
         function handleSearch() {
@@ -1192,7 +1212,7 @@
         }
 
         // =============================================
-        // FONCTIONS DES BOUTONS D'ACTION (RESTENT IDENTIQUES)
+        // FONCTIONS DES BOUTONS D'ACTION
         // =============================================
         // Validation d'une société
         async function validateCompany(id) {
@@ -1202,6 +1222,18 @@
                 const company = companiesData.find(c => c.id === id);
                 if (!company) {
                     throw new Error('Société non trouvée');
+                }
+                
+                // Récupérer les valeurs actuelles des champs d'édition
+                const row = document.querySelector(`tr[data-id="${id}"]`);
+                
+                if (row) {
+                    const inputs = row.querySelectorAll('.editable-cell');
+                    inputs.forEach(input => {
+                        const field = input.getAttribute('data-field');
+                        const value = input.value;
+                        company[field] = value;
+                    });
                 }
                 
                 // Validation des champs obligatoires
@@ -1248,7 +1280,7 @@
             }
         }
 
-        // Suppression d'une société
+        // Suppression d'une société - CORRIGÉE
         function deleteCompany(id) {
             const company = companiesData.find(c => c.id === id);
             const companyName = company ? company.company : 'cette société';
@@ -1287,7 +1319,7 @@
         }
 
         // =============================================
-        // ÉDITION EN LIGNE (RESTENT IDENTIQUES)
+        // ÉDITION EN LIGNE
         // =============================================
         function attachEditableListeners() {
             // Nettoyer les anciens écouteurs
@@ -1372,7 +1404,7 @@
         }
 
         // =============================================
-        // IMPORT/EXPORT (RESTENT IDENTIQUES)
+        // IMPORT/EXPORT
         // =============================================
         // Importation depuis Excel
         function handleExcelImport(event) {
@@ -1603,7 +1635,7 @@
         }
 
         // =============================================
-        // PAGINATION (RESTENT IDENTIQUES)
+        // PAGINATION
         // =============================================
         function updatePagination() {
             const totalItems = filteredData.length;
@@ -1660,7 +1692,7 @@
         }
 
         // =============================================
-        // UTILITAIRES (RESTENT IDENTIQUES)
+        // UTILITAIRES
         // =============================================
         // Fonction debounce pour optimiser les recherches
         function debounce(func, wait) {
@@ -1715,14 +1747,6 @@
                     }
                 }, 300);
             }, 5000);
-        }
-
-        // Modal de confirmation
-        function showConfirmationModal(title, message, confirmCallback) {
-            modalTitle.textContent = title;
-            modalMessage.textContent = message;
-            currentModalCallback = confirmCallback;
-            confirmationModal.classList.add('show');
         }
 
         // Données de démonstration
