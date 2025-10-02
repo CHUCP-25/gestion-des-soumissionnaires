@@ -51,7 +51,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* [TOUT LE CSS RESTE IDENTIQUE] */
+        /* [TOUT LE CSS RESTE IDENTIQUE SAUF LES MODIFICATIONS SUIVANTES] */
         :root {
             --primary: #3498db;
             --primary-dark: #2980b9;
@@ -223,6 +223,8 @@
             background-color: #e9ecef;
             transform: translateY(-2px);
         }
+        
+        /* MODIFICATIONS APPORTÉES ICI POUR LES TAILLES DES COLONNES */
         .table-container {
             background-color: white;
             border-radius: 10px;
@@ -232,44 +234,87 @@
             overflow-x: auto;
             position: relative;
         }
-        /* Barre de défilement horizontale personnalisée */
-        .horizontal-scrollbar {
-            height: 12px;
-            background: #f1f1f1;
-            border-radius: 0 0 10px 10px;
-            position: relative;
-            margin-top: 5px;
-            display: none;
-        }
-        .scroll-thumb {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 6px;
-            position: absolute;
-            cursor: grab;
-            min-width: 50px;
-            transition: background-color 0.2s;
-        }
-        .scroll-thumb:hover {
-            background: var(--primary-dark);
-        }
-        .scroll-thumb:active {
-            cursor: grabbing;
-        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1200px;
+            min-width: 1800px; /* Augmenté pour accommoder les colonnes plus larges */
         }
+        
         thead {
             background-color: var(--primary);
             color: white;
         }
+        
         th, td {
             padding: 12px 10px;
             text-align: left;
             border-bottom: 1px solid var(--border);
+            /* TAILLES DES COLONNES SPÉCIFIQUES */
         }
+        
+        /* DAO N°: 15 caractères */
+        th:nth-child(1), td:nth-child(1) {
+            width: 150px;
+            min-width: 150px;
+            max-width: 150px;
+        }
+        
+        /* Exercice: taille normale */
+        th:nth-child(2), td:nth-child(2) {
+            width: 100px;
+            min-width: 100px;
+            max-width: 100px;
+        }
+        
+        /* OBJET: 40 caractères */
+        th:nth-child(3), td:nth-child(3) {
+            width: 400px;
+            min-width: 400px;
+            max-width: 400px;
+        }
+        
+        /* SOCIETE: taille normale */
+        th:nth-child(4), td:nth-child(4) {
+            width: 200px;
+            min-width: 200px;
+            max-width: 200px;
+        }
+        
+        /* ADRESSE: 40 caractères */
+        th:nth-child(5), td:nth-child(5) {
+            width: 400px;
+            min-width: 400px;
+            max-width: 400px;
+        }
+        
+        /* N° RC, Ville RC, ICE, IF, CNSS, TEL, FAX: 20 caractères chacun */
+        th:nth-child(6), td:nth-child(6),
+        th:nth-child(7), td:nth-child(7),
+        th:nth-child(8), td:nth-child(8),
+        th:nth-child(9), td:nth-child(9),
+        th:nth-child(10), td:nth-child(10),
+        th:nth-child(11), td:nth-child(11),
+        th:nth-child(12), td:nth-child(12) {
+            width: 160px;
+            min-width: 160px;
+            max-width: 160px;
+        }
+        
+        /* E-mail: 30 caractères */
+        th:nth-child(13), td:nth-child(13) {
+            width: 250px;
+            min-width: 250px;
+            max-width: 250px;
+        }
+        
+        /* ACTION: taille normale */
+        th:nth-child(14), td:nth-child(14) {
+            width: 180px;
+            min-width: 180px;
+            max-width: 180px;
+        }
+        
         th {
             font-weight: 600;
             position: sticky;
@@ -430,7 +475,8 @@
         .notification.warning {
             background-color: var(--warning);
         }
-        /* STYLE AMÉLIORÉ POUR LES CELLULES ÉDITABLES */
+        
+        /* STYLE AMÉLIORÉ POUR LES CELLULES ÉDITABLES - TAILLES AUGMENTÉES */
         .editable-cell {
             padding: 8px;
             border: 2px solid var(--primary);
@@ -439,7 +485,58 @@
             width: 100%;
             box-sizing: border-box;
             background-color: rgba(52, 152, 219, 0.05);
+            font-size: 14px;
         }
+        
+        /* TAILLES SPÉCIFIQUES POUR LES CHAMPS DE SAISIE */
+        /* DAO N°: 15 caractères */
+        td:nth-child(1) .editable-cell {
+            width: 100%;
+            min-width: 130px;
+        }
+        
+        /* Exercice: taille normale */
+        td:nth-child(2) .editable-cell {
+            width: 100%;
+            min-width: 80px;
+        }
+        
+        /* OBJET: 40 caractères */
+        td:nth-child(3) .editable-cell {
+            width: 100%;
+            min-width: 380px;
+        }
+        
+        /* SOCIETE: taille normale */
+        td:nth-child(4) .editable-cell {
+            width: 100%;
+            min-width: 180px;
+        }
+        
+        /* ADRESSE: 40 caractères */
+        td:nth-child(5) .editable-cell {
+            width: 100%;
+            min-width: 380px;
+        }
+        
+        /* N° RC, Ville RC, ICE, IF, CNSS, TEL, FAX: 20 caractères chacun */
+        td:nth-child(6) .editable-cell,
+        td:nth-child(7) .editable-cell,
+        td:nth-child(8) .editable-cell,
+        td:nth-child(9) .editable-cell,
+        td:nth-child(10) .editable-cell,
+        td:nth-child(11) .editable-cell,
+        td:nth-child(12) .editable-cell {
+            width: 100%;
+            min-width: 140px;
+        }
+        
+        /* E-mail: 30 caractères */
+        td:nth-child(13) .editable-cell {
+            width: 100%;
+            min-width: 230px;
+        }
+        
         .editable-cell:hover {
             background-color: rgba(52, 152, 219, 0.1);
             border-color: var(--primary-dark);
@@ -461,6 +558,8 @@
             margin-top: 20px;
             flex-wrap: wrap;
         }
+        
+        /* BARRE DE DÉFILEMENT AMÉLIORÉE - MAINTENANT AU-DESSUS DU TABLEAU */
         .horizontal-scroll-info {
             text-align: center;
             color: var(--gray);
@@ -471,6 +570,35 @@
             justify-content: center;
             gap: 8px;
         }
+        
+        .horizontal-scrollbar {
+            height: 12px;
+            background: #f1f1f1;
+            border-radius: 10px 10px 0 0;
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            margin-bottom: 5px;
+            z-index: 10;
+        }
+        
+        .scroll-thumb {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 6px;
+            position: absolute;
+            cursor: grab;
+            min-width: 50px;
+            transition: background-color 0.2s;
+        }
+        .scroll-thumb:hover {
+            background: var(--primary-dark);
+        }
+        .scroll-thumb:active {
+            cursor: grabbing;
+        }
+        
         .empty-row {
             background-color: rgba(52, 152, 219, 0.05);
         }
@@ -571,11 +699,18 @@
                 </div>
             </div>
         </div>
-        <!-- BARRE DE DÉFILEMENT HORIZONTALE -->
+        
+        <!-- BARRE DE DÉFILEMENT HORIZONTALE AMÉLIORÉE - MAINTENANT AU-DESSUS DU TABLEAU -->
         <div class="horizontal-scroll-info">
             <i class="fas fa-arrows-left-right"></i> Faites défiler horizontalement pour voir toutes les colonnes
         </div>
+        
         <div class="table-container" id="tableContainer">
+            <!-- Barre de défilement horizontale personnalisée - DÉPLACÉE AU-DESSUS DU TABLEAU -->
+            <div class="horizontal-scrollbar" id="horizontalScrollbar">
+                <div class="scroll-thumb" id="scrollThumb"></div>
+            </div>
+            
             <table id="companiesTable">
                 <thead>
                     <tr>
@@ -600,10 +735,7 @@
                 </tbody>
             </table>
         </div>
-        <!-- Barre de défilement horizontale personnalisée -->
-        <div class="horizontal-scrollbar" id="horizontalScrollbar">
-            <div class="scroll-thumb" id="scrollThumb"></div>
-        </div>
+        
         <div class="table-footer-buttons">
             <input type="file" id="excelFileInput" class="file-input" accept=".xlsx, .xls">
             <button class="btn btn-orange" id="importDataBtn">
@@ -660,6 +792,8 @@
             </div>
         </div>
     </div>
+
+    <!-- LE SCRIPT JAVASCRIPT RESTE IDENTIQUE AU PRÉCÉDENT -->
     <script>
         // =============================================
         // VARIABLES GLOBALES
